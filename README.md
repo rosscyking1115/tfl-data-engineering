@@ -32,8 +32,16 @@ cycling.data.tfl.gov.uk (bulk history)      TfL Unified API (daily JSON)
 
 ## The Spark ↔ plain-Python honesty boundary
 
-<!-- Filled in Phase 1/4: why Spark is justified for the 189M-row multi-era backfill,
-     and why the daily increments deliberately do NOT use it. -->
+**Spark for the backfill** because the archive is genuinely hostile at scale: ~189M rows
+across 482 files with five header variants (columns renamed, deleted, and re-ordered
+between files — see [ADR-0002](docs/adr/ADR-0002-spark-in-docker-and-header-variants.md)),
+requiring per-variant by-name projection, multi-format timestamp parsing, quarantine, and
+a per-file reconciliation audit. The 2022→2026 slice (41.4M rows, 6.5 GB) unified in ~30
+min on `local[10]` ([findings](docs/phase1/backfill_findings.md)).
+**Plain Python for the daily increments** because a day of BikePoint/Line-Status JSON is
+kilobytes; Spark there would be theatre. <!-- expand in Phase 3/4 -->
+
+<!-- Phase 4: add the "when DuckDB alone would be the right production call" why-not. -->
 
 ## Cost notes (Snowflake)
 
@@ -59,7 +67,8 @@ copy .env.example .env   # then fill in keys
 ## Status
 
 - [x] Gate 0 — dataset verified and locked ([ADR-0001](docs/adr/ADR-0001-dataset-and-stack.md))
-- [ ] Phase 1 — Spark backfill → Snowflake silver
+- [x] Phase 1a — Spark backfill 2022→2026: 41.4M rows reconciled to parquet silver ([findings](docs/phase1/backfill_findings.md))
+- [ ] Phase 1b — load silver into Snowflake (awaiting trial signup)
 - [ ] Phase 2 — dbt star schema + tests
 - [ ] Phase 3 — Airflow DAGs + Power BI
 - [ ] Phase 4 — README as the product
