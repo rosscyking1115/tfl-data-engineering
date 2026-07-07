@@ -36,6 +36,22 @@ and the older eras).
 - Durations: min 1 s, max **209 days** (unreturned bike), mean 23.2 min — the
   accepted-range dbt test should flag, not fail, the long tail.
 
+## Snowflake load (Phase 1b, 2026-07-07)
+
+Internal stage + `COPY INTO` via [load_silver_to_snowflake.py](../../ingestion/load_silver_to_snowflake.py):
+**41,376,181 rows in `TFL.SILVER.JOURNEYS` — exact match with local silver.**
+Era boundary confirmed in-warehouse: classic ends 2022-09-11 23:58, nextgen starts
+2022-09-12 05:02 (the switchover gap is real, not an artifact).
+
+Cost: **0.105 credits (~$0.30)** for the entire 1.6 GB / 41M-row load on the XS
+warehouse; auto-suspend (60 s) kicked in immediately after. The trial's default
+`COMPUTE_WH` was also clamped to 60 s auto-suspend for credit hygiene.
+
+Known wart to fix in Phase 2: Spark wrote **10,803 small parquet files** (default
+200 shuffle partitions fanned out across 54 year/month partitions). Harmless at this
+scale but sloppy — add a `.repartition("year","month")` (or coalesce per partition)
+before the write and re-measure PUT/COPY time.
+
 ## What the run itself taught (beyond Gate 0)
 
 Five header variants, not two eras (ADR-0002): a column deleted mid-2022, and two

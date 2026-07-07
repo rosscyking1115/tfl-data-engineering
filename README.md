@@ -45,7 +45,14 @@ kilobytes; Spark there would be theatre. <!-- expand in Phase 3/4 -->
 
 ## Cost notes (Snowflake)
 
-<!-- Filled in Phase 2/4: actual credit burn, warehouse sizing, what tuning changed. -->
+Running tally on the 30-day/$400 trial (Standard edition, AWS eu-west-2, XS warehouse,
+60 s auto-suspend everywhere):
+
+| date | what | credits |
+|---|---|---:|
+| 2026-07-07 | Phase 1b: stage + COPY of 41.4M-row silver (1.6 GB parquet) | 0.105 (~$0.30) |
+
+<!-- keep appending; Phase 4 turns this into the cost story -->
 
 ## Repo layout
 
@@ -68,7 +75,8 @@ copy .env.example .env   # then fill in keys
 
 - [x] Gate 0 — dataset verified and locked ([ADR-0001](docs/adr/ADR-0001-dataset-and-stack.md))
 - [x] Phase 1a — Spark backfill 2022→2026: 41.4M rows reconciled to parquet silver ([findings](docs/phase1/backfill_findings.md))
-- [ ] Phase 1b — load silver into Snowflake (awaiting trial signup)
+- [x] Phase 1b — 41,376,181 rows in `TFL.SILVER.JOURNEYS`, exact count match, 0.105 credits
+- [ ] Phase 2 — dbt star schema + tests
 - [ ] Phase 2 — dbt star schema + tests
 - [ ] Phase 3 — Airflow DAGs + Power BI
 - [ ] Phase 4 — README as the product
