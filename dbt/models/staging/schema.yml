@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: stg_journeys
+    description: Silver journeys with whitespace-normalized station names. Same grain as silver.
+    columns:
+      - name: rental_id
+        tests: [not_null]
+      - name: era
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["classic", "nextgen"]
+      - name: start_ts
+        tests: [not_null]

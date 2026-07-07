@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: dim_station
+    description: Stations unified across both ID regimes by cleaned name (ADR-0002 context).
+    columns:
+      - name: station_key
+        tests: [unique, not_null]
+      - name: station_name
+        tests: [unique, not_null]
+
+  - name: dim_date
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+      - name: date_day
+        tests: [unique, not_null]
+
+  - name: fact_journey
+    description: One row per hire, 2022 → present.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [era, rental_id]
+    columns:
+      - name: journey_key
+        tests: [unique, not_null]
+      - name: duration_s
+        description: Ride time in seconds; broken hires (<=0) were quarantined upstream.
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              inclusive: true
+      - name: start_date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+          - dbt_utils.accepted_range:
+              min_value: 20211201
+              max_value: 20281231
+      - name: start_station_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_station')
+              field: station_key
+      - name: end_station_key
+        description: Nullable only if the source row lacked both end code and name (quarantined upstream, so expected non-null).
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_station')
+              field: station_key

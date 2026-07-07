@@ -1,0 +1,13 @@
+# Credentials come from .env (loaded by infra/run_dbt.ps1) — never hardcoded here.
+tfl_snowflake:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      warehouse: TFL_WH
+      database: TFL
+      schema: silver
+      threads: 4

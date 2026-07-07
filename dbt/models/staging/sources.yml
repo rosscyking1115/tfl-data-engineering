@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: silver
+    database: TFL
+    schema: SILVER
+    description: Spark-backfilled journey rows (see spark/backfill.py and ADR-0002)
+    tables:
+      - name: JOURNEYS
+        description: >
+          Unified journeys 2022→present across both schema eras. One row per hire;
+          240 broken hires quarantined upstream. 312k rows have NULL end_station_code
+          (a 2022 header variant) but retain end_station_name.
