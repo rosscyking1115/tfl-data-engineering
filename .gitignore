@@ -19,3 +19,6 @@ logs/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# dbt local user id
+dbt/.user.yml
