@@ -35,5 +35,5 @@ published rankings. Weekend rides run longer than weekday in both eras (24.6 vs
 
 ## Cost
 
-Phase 2 build + sanity queries: ~0.11 credits (~$0.33). Running trial total ~0.35
-credits of $400.
+Phase 2 build + sanity queries: ~0.11 credits (~$0.22 at Standard $2/credit). Running
+trial total ~0.35 credits of $400.

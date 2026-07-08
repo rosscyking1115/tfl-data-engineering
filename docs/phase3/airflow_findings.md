@@ -31,7 +31,8 @@ CRITICAL log line always; Slack-compatible webhook POST when `ALERT_WEBHOOK_URL`
    same payload POSTs to Slack.
 4. All four DAGs parse with zero import errors; UI at http://localhost:8080.
 
-Credit burn for the day's dbt builds + loads: ~0.15 credits (~$0.45).
+Credit burn for the day's dbt builds + loads: ~0.15 credits (~$0.30 at Standard $2/credit).
+Cumulative build cost to date: ≈0.50 credits (~$1) of the $400 trial.
 
 ## Ingestion quality gates
 

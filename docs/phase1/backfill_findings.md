@@ -43,7 +43,7 @@ Internal stage + `COPY INTO` via [load_silver_to_snowflake.py](../../ingestion/l
 Era boundary confirmed in-warehouse: classic ends 2022-09-11 23:58, nextgen starts
 2022-09-12 05:02 (the switchover gap is real, not an artifact).
 
-Cost: **0.105 credits (~$0.30)** for the entire 1.6 GB / 41M-row load on the XS
+Cost: **0.105 credits (~$0.21 at Standard $2/credit)** for the entire 1.6 GB / 41M-row load on the XS
 warehouse; auto-suspend (60 s) kicked in immediately after. The trial's default
 `COMPUTE_WH` was also clamped to 60 s auto-suspend for credit hygiene.
 
