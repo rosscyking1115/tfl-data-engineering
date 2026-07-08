@@ -198,6 +198,25 @@ with many concurrent users instead of a portfolio slice:
 - **Orchestration is idempotent but not backfill-parallel** — the daily loader's
   delete+insert-per-date makes reruns safe, which is the property that matters most.
 
+## Phase 5 (bonus): read-only MCP layer
+
+A small [MCP](https://modelcontextprotocol.io) server ([`mcp/gold_server.py`](mcp/gold_server.py))
+exposes the gold layer to an AI client so it can answer questions like *"which stations were
+busiest in 2024?"* through **typed tools instead of guessed SQL**. Framed honestly as an
+AI-integration *demonstration on top of* the pipeline — not pipeline machinery (Airflow
+orchestrates the pipeline; the AI does not).
+
+Three independent guardrails ([ADR-0004](docs/adr/ADR-0004-mcp-readonly-boundary.md)):
+1. **Least-privilege role** `TFL_GOLD_READONLY` — SELECT on `TFL.GOLD` only; no writes, no
+   SILVER/RAW. The guardrail is enforced by Snowflake, not app code.
+2. **`use secondary roles none`** on every connection — without it the trial account's default
+   secondary roles leak ACCOUNTADMIN back in (verification caught exactly this: INSERT and
+   SILVER-SELECT wrongly succeeded until it was added).
+3. **Curated, parameterized tools only** — `search_stations`, `top_stations`,
+   `daily_usage_trend`, `station_flow`. No free-form `run_sql` escape hatch.
+
+Registered in [`.mcp.json`](.mcp.json); run `mcp/setup_readonly_role.sql` once first.
+
 ## Repo layout
 
 ```
@@ -205,6 +224,7 @@ ingestion/   Gate 0 verification scripts · daily API loader · Snowflake loader
 spark/       backfill.py — the multi-era unification job
 dbt/         staging + marts models, tests, profiles (creds via env_var)
 infra/       docker-compose · Airflow image + DAGs · run_dbt.ps1 · run_backfill.ps1
+mcp/         read-only MCP server over gold + role-setup SQL (Phase 5 bonus)
 docs/        ADRs · Gate 0 evidence · per-phase findings · Power BI guide
 data/        local bronze zone (gitignored)
 ```
@@ -242,6 +262,7 @@ Power BI connection + suggested visuals: [docs/phase3/powerbi_guide.md](docs/pha
 - [ADR-0001](docs/adr/ADR-0001-dataset-and-stack.md) — why cycle-hire over LAQN, with measured numbers
 - [ADR-0002](docs/adr/ADR-0002-spark-in-docker-and-header-variants.md) — Spark-in-Docker, and header-variant grouping
 - [ADR-0003](docs/adr/ADR-0003-orchestration-and-boundary.md) — Airflow sizing + the incremental-layer boundary
+- [ADR-0004](docs/adr/ADR-0004-mcp-readonly-boundary.md) — MCP read-only role + curated-tools boundary
 
 ## Build status
 
@@ -251,3 +272,4 @@ Power BI connection + suggested visuals: [docs/phase3/powerbi_guide.md](docs/pha
 - [x] Phase 3a — Airflow live, daily ingest → dbt chain, failure alert demonstrated
 - [ ] Phase 3b — Power BI dashboard (guide ready; hand-built in Power BI Desktop)
 - [x] Phase 4 — this README
+- [x] Phase 5 (bonus) — read-only MCP layer over gold, verified read-only
