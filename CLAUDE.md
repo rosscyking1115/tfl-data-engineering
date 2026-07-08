@@ -1,24 +1,32 @@
-# Project rules (from the governing plan — docs/tfl-data-engineering-plan.md)
+# Project rules
 
-- **Skill-credential project, time-boxed to 2–3 weekends.** No users, no accounts, no
-  product framing, no streaming theatre. When a step balloons, shrink scope (3 years of
-  data is fine) — never extend the time-box.
-- **Every phase must end runnable.** Don't leave a phase half-wired.
-- **Secrets live in `.env`** (never committed). `.env.example` documents the shape.
-- **Record every non-obvious decision as a short ADR** in `docs/adr/`.
-- **Dataset is locked** (ADR-0001): cycle-hire journey archive is the Spark backbone;
-  LAQN is cut; TfL Unified API (BikePoint + Line Status) is the daily incremental layer;
-  weather (Open-Meteo) is the optional enrichment.
-- **The honesty boundary is the product:** Spark only for the multi-era backfill, plain
-  Python/DuckDB for daily increments — both rationales belong in the README.
-- Snowflake trial (30 days) starts at Phase 1 weekend, not before. Use XS warehouse +
-  auto-suspend; record actual credit burn in the README.
-- Stack is locked: PySpark, Snowflake, dbt, Airflow, Power BI. Don't add tools.
+> **Direction changed (2026-07-08, ADR-0006):** this evolved from a one-off DE pipeline
+> into a **living disruption-aware cycling-demand workflow**. The original build plan is
+> kept for history at `docs/tfl-data-engineering-plan.md`; the rules below now govern.
+
+- **Still not commercial:** no users, no accounts, no auth, no billing. It's a
+  genuinely-running portfolio workflow, not a product to sell.
+- **Durable + free is the constraint.** The live runtime is GitHub Actions (public repo) +
+  committed Parquet + DuckDB — no dependency on a live warehouse. Snowflake is a
+  **documented past phase** (the batch build), not a runtime; Airflow is a **local
+  showcase**, not the durable scheduler.
+- **The honesty boundary is still the product:** Spark for the multi-era backfill, plain
+  Python/DuckDB for the kilobyte increments. And journey data lags ~1–2 months, so the
+  workflow honestly separates **historical quantification** from **live monitoring** — never
+  claim real-time trip prediction (ADR-0006).
+- **Every phase ends runnable.** Secrets in `.env` (never committed). Record non-obvious
+  decisions as a short ADR in `docs/adr/`. Never add AI attribution to commits.
+- **Dataset** (ADR-0001): cycle-hire journey archive (Spark backbone); LAQN cut; TfL Unified
+  API (BikePoint + Line Status) the live layer; weather (Open-Meteo) now built, not optional.
+- **Working stack:** PySpark (backfill), Snowflake (past build), dbt + dbt-duckdb,
+  Airflow (local), DuckDB + Parquet (durable), Streamlit (public app), GitHub Actions
+  (runtime), MCP (AI access). Power BI is optional PL-300 practice.
 
 ## Environment
 
 - Windows 11; venv at `.venv` (`.venv\Scripts\python.exe`), deps: requests, duckdb,
-  pandas, openpyxl (PySpark added in Phase 1).
+  pandas, openpyxl, pyspark, snowflake-connector-python, python-dotenv, dbt-snowflake,
+  dbt-duckdb, pyarrow, streamlit, altair, mcp.
 - Set `PYTHONIOENCODING=utf-8` when a script prints DuckDB tables (cp1252 console).
 - Bulk bucket listing: `https://s3-eu-west-1.amazonaws.com/cycling.data.tfl.gov.uk/`
   (ListObjectsV2; the vanity domain serves an HTML browser, not XML).

@@ -34,8 +34,14 @@ demand** — an effect this platform quantifies per station against a weather-ad
   with **48 data tests**, including cross-era station-identity conforming.
 - **Orchestrated & observable.** Airflow DAGs for daily ingestion, model builds, and a
   demonstrated failure-alerting path.
-- **Interactive & AI-queryable.** A Streamlit app for exploration, plus a read-only MCP
-  server exposing the warehouse to AI clients through typed, guardrailed tools.
+- **Disruption intelligence.** A weather-adjusted baseline isolates the strike effect:
+  disruption days run **1.33× median** cycling demand vs normal, with per-station drill-down.
+- **Live & durable, for free.** A daily GitHub Actions job refreshes live Line Status +
+  dock occupancy into committed Parquet; the app reads it via DuckDB with no warehouse — so
+  it keeps running long after the Snowflake trial ends.
+- **Interactive & AI-queryable.** A Streamlit app (disruption impact · today's network ·
+  usage trends · station explorer), plus a read-only MCP server exposing the warehouse to AI
+  clients through typed, guardrailed tools.
 - **Frugal by design.** The entire warehouse build cost **~$1** on an XS warehouse with
   aggressive auto-suspend.
 
@@ -108,12 +114,20 @@ docs/        ADRs, architecture and engineering notes
 - [ADR-0003](docs/adr/ADR-0003-orchestration-and-boundary.md) — orchestration sizing & the incremental boundary
 - [ADR-0004](docs/adr/ADR-0004-mcp-readonly-boundary.md) — MCP read-only guardrails
 - [ADR-0005](docs/adr/ADR-0005-streamlit-demo-layer.md) — the demo layer & durable hosting
+- [ADR-0006](docs/adr/ADR-0006-pivot-to-live-disruption-workflow.md) — pivot to the live disruption workflow & the journey-lag honesty split
+
+## How it stays live
+
+A daily GitHub Actions job ([.github/workflows/daily.yml](.github/workflows/daily.yml))
+ingests live Line Status and dock occupancy into committed Parquet; `dbt-duckdb` refreshes the
+weather-adjusted baseline and the demand-deviation table; the Streamlit app reads it all via
+DuckDB. No warehouse, no server — it runs on free tiers indefinitely. Because journey data is
+published in bulk with a lag, the design honestly separates **historical quantification** from
+**live monitoring** rather than claiming real-time trip prediction ([ADR-0006](docs/adr/ADR-0006-pivot-to-live-disruption-workflow.md)).
 
 ## Roadmap
 
-The platform is evolving into a **continuously-updating disruption-intelligence workflow**:
-a daily GitHub Actions job ingests live Line Status and dock occupancy, refreshes a
-weather-adjusted demand baseline via dbt-duckdb, and surfaces — live — which corridors are
-absorbing displaced demand during a disruption. Journey data is published in bulk with a lag,
-so the design honestly separates **historical quantification** from **live monitoring** rather
-than claiming real-time trip prediction.
+- Deploy the app to Streamlit Community Cloud (one-click from the public repo).
+- Accumulate forward dock-occupancy history to unlock short-horizon availability nowcasting
+  (not possible today — TfL publishes no historical occupancy).
+- A separate ML project: station-level demand forecasting with MLflow + a serving API.
