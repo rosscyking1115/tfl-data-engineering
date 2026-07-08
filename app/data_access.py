@@ -79,3 +79,77 @@ def station_series(station_name: str, start: str, end: str) -> pd.DataFrame:
 def _key(d) -> int:
     """date / 'YYYY-MM-DD' -> YYYYMMDD int (the gold date_key)."""
     return int(pd.Timestamp(d).strftime("%Y%m%d"))
+
+
+# --- Disruption analytics (demand_deviation.parquet) ---
+
+def _dev_path() -> str:
+    return (EXPORT / "demand_deviation.parquet").as_posix()
+
+
+@st.cache_data(ttl="1h")
+def disruption_headline() -> pd.DataFrame:
+    """Weather-adjusted median demand ratio: disruption days vs normal days."""
+    return duckdb.connect().execute(
+        f"""
+        select case when is_disruption then 'Disruption days' else 'Normal days' end as day_type,
+               count(distinct date_key) as n_dates,
+               round(median(deviation_ratio), 3) as median_ratio
+        from read_parquet('{_dev_path()}')
+        where expected_departures >= 5
+        group by 1 order by 1
+        """
+    ).df()
+
+
+@st.cache_data(ttl="1h")
+def disruption_dates() -> pd.DataFrame:
+    """Per disruption date: system actual vs weather-adjusted expected + ratio."""
+    return duckdb.connect().execute(
+        f"""
+        select date_day,
+               sum(departures) as actual,
+               round(sum(expected_departures)) as expected,
+               round(sum(departures) / nullif(sum(expected_departures), 0), 2) as ratio,
+               any_value(disruption_severity) as severity
+        from read_parquet('{_dev_path()}')
+        where is_disruption
+        group by date_day order by date_day
+        """
+    ).df()
+
+
+@st.cache_data(ttl="1h")
+def top_movers_on(date_str: str, limit: int = 15) -> pd.DataFrame:
+    """Stations with the largest positive demand deviation on a given date."""
+    return duckdb.connect().execute(
+        f"""
+        select station_name, departures, round(expected_departures) as expected,
+               deviation, deviation_ratio
+        from read_parquet('{_dev_path()}')
+        where date_day = ?::date and expected_departures >= 5
+        order by deviation desc
+        limit ?
+        """,
+        [date_str, limit],
+    ).df()
+
+
+# --- Live layer (live_*.parquet, refreshed by the daily GitHub Action) ---
+
+@st.cache_data(ttl="15m")
+def live_line_status() -> pd.DataFrame:
+    path = EXPORT / "live_line_status.parquet"
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_parquet(path)
+    return df[df["snapshot_date"] == df["snapshot_date"].max()]
+
+
+@st.cache_data(ttl="15m")
+def live_bikepoint() -> pd.DataFrame:
+    path = EXPORT / "live_bikepoint.parquet"
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_parquet(path)
+    return df[df["snapshot_date"] == df["snapshot_date"].max()]
