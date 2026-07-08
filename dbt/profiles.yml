@@ -11,3 +11,12 @@ tfl_snowflake:
       database: TFL
       schema: silver
       threads: 4
+    # Durable, warehouse-free target for the analytics layer. Reads/writes the
+    # committed gold Parquet via DuckDB. Run dbt from the repo root so the
+    # relative Parquet paths resolve.
+    duckdb:
+      type: duckdb
+      path: ":memory:"
+      extensions:
+        - parquet
+      threads: 4

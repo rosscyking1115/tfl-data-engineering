@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: gold_export
+    description: Committed gold Parquet (app/gold_export/) — the durable, warehouse-free source.
+    meta:
+      external_location: "app/gold_export/{name}.parquet"
+    tables:
+      - name: station_daily_flows
+      - name: dim_station
+      - name: weather_daily

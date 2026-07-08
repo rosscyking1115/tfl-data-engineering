@@ -17,3 +17,12 @@ models:
     marts:
       +materialized: table
       +schema: gold
+    # Durable analytics layer — runs on the duckdb target over committed Parquet,
+    # no warehouse. Select with: dbt build --target duckdb --select tag:analytics
+    analytics:
+      +tags: ["analytics"]
+
+seeds:
+  tfl_pipeline:
+    disruption_dates:
+      +tags: ["analytics"]
