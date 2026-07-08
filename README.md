@@ -16,6 +16,18 @@ and a clear argument for why using Spark for the latter would be theatre.
 > Built as a focused, time-boxed skill project (Gate 0 + four phases). Every phase ends
 > in a runnable state; every non-obvious decision is an [ADR](docs/adr/).
 
+## Live demo
+
+**▶ [Explore the interactive dashboard](https://share.streamlit.io/)** *(deploy link — see
+[app/](app/))* — a zero-setup Streamlit app over the gold layer: system-wide usage trends
+(the Sep-2022 schema-era switch is visible in the time series) and a per-station explorer.
+It reads committed Parquet via DuckDB, so it runs with **no live warehouse** and outlives
+the Snowflake trial.
+
+<!-- After deploying to Streamlit Community Cloud, replace the link above with the app URL
+     and drop a screenshot at docs/img/streamlit_demo.png, then uncomment: -->
+<!-- ![Streamlit demo](docs/img/streamlit_demo.png) -->
+
 ## At a glance
 
 | | |
@@ -225,6 +237,7 @@ spark/       backfill.py — the multi-era unification job
 dbt/         staging + marts models, tests, profiles (creds via env_var)
 infra/       docker-compose · Airflow image + DAGs · run_dbt.ps1 · run_backfill.ps1
 mcp/         read-only MCP server over gold + role-setup SQL (Phase 5 bonus)
+app/         Streamlit demo (DuckDB over committed gold Parquet) — the public "show" layer
 docs/        ADRs · Gate 0 evidence · per-phase findings · Power BI guide
 data/        local bronze zone (gitignored)
 ```
@@ -263,6 +276,7 @@ Power BI connection + suggested visuals: [docs/phase3/powerbi_guide.md](docs/pha
 - [ADR-0002](docs/adr/ADR-0002-spark-in-docker-and-header-variants.md) — Spark-in-Docker, and header-variant grouping
 - [ADR-0003](docs/adr/ADR-0003-orchestration-and-boundary.md) — Airflow sizing + the incremental-layer boundary
 - [ADR-0004](docs/adr/ADR-0004-mcp-readonly-boundary.md) — MCP read-only role + curated-tools boundary
+- [ADR-0005](docs/adr/ADR-0005-streamlit-demo-layer.md) — Streamlit demo as the public consuming layer (DuckDB/Parquet, trial-independent)
 
 ## Build status
 
@@ -273,3 +287,4 @@ Power BI connection + suggested visuals: [docs/phase3/powerbi_guide.md](docs/pha
 - [ ] Phase 3b — Power BI dashboard (guide ready; hand-built in Power BI Desktop)
 - [x] Phase 4 — this README
 - [x] Phase 5 (bonus) — read-only MCP layer over gold, verified read-only
+- [x] Streamlit demo — interactive public dashboard over gold (verified locally; deploy = one click)

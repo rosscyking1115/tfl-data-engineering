@@ -1,0 +1,6 @@
+# Streamlit Community Cloud installs these to run the demo.
+streamlit>=1.57
+duckdb>=1.0
+pandas>=2.0
+pyarrow>=15
+altair>=5

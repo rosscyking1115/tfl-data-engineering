@@ -22,3 +22,6 @@ Thumbs.db
 
 # dbt local user id
 dbt/.user.yml
+
+# Local Claude Code tooling config (preview launch, local settings)
+.claude/
