@@ -39,7 +39,10 @@ requiring per-variant by-name projection, multi-format timestamp parsing, quaran
 a per-file reconciliation audit. The 2022→2026 slice (41.4M rows, 6.5 GB) unified in ~30
 min on `local[10]` ([findings](docs/phase1/backfill_findings.md)).
 **Plain Python for the daily increments** because a day of BikePoint/Line-Status JSON is
-kilobytes; Spark there would be theatre. <!-- expand in Phase 3/4 -->
+kilobytes: [daily_api_ingest.py](ingestion/daily_api_ingest.py) is ~150 lines of requests +
+`executemany`, pulls 798 dock rows + ~20 line rows, lands raw JSON as bronze, and loads
+Snowflake idempotently (delete+insert per snapshot date). Spark here would be theatre —
+the same reasoning that *demands* Spark for the backfill *forbids* it for the increment.
 
 <!-- Phase 4: add the "when DuckDB alone would be the right production call" why-not. -->
 
@@ -52,6 +55,7 @@ Running tally on the 30-day/$400 trial (Standard edition, AWS eu-west-2, XS ware
 |---|---|---:|
 | 2026-07-07 | Phase 1b: stage + COPY of 41.4M-row silver (1.6 GB parquet) | 0.105 (~$0.30) |
 | 2026-07-07 | Phase 2: dbt build (4 models, 28 tests) + sanity queries | ~0.11 (~$0.33) |
+| 2026-07-08 | Phase 3: daily loads + 2× dbt build (8 models, 48 tests) via Airflow | ~0.15 (~$0.45) |
 
 <!-- keep appending; Phase 4 turns this into the cost story -->
 
@@ -78,5 +82,6 @@ copy .env.example .env   # then fill in keys
 - [x] Phase 1a — Spark backfill 2022→2026: 41.4M rows reconciled to parquet silver ([findings](docs/phase1/backfill_findings.md))
 - [x] Phase 1b — 41,376,181 rows in `TFL.SILVER.JOURNEYS`, exact count match, 0.105 credits
 - [x] Phase 2 — dbt star schema, 28/28 tests green ([findings](docs/phase2/dbt_findings.md))
-- [ ] Phase 3 — Airflow DAGs + Power BI
+- [x] Phase 3a — Airflow live: daily ingest → dbt chain green, failure alert demonstrated ([findings](docs/phase3/airflow_findings.md))
+- [ ] Phase 3b — Power BI dashboard on gold ([guide](docs/phase3/powerbi_guide.md) ready; built by hand in Power BI Desktop)
 - [ ] Phase 4 — README as the product

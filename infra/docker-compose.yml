@@ -1,0 +1,18 @@
+# Airflow standalone (single container: scheduler + webserver + SQLite metadata DB).
+# Honest sizing: three small DAGs for one user need no CeleryExecutor/Postgres fleet.
+# UI: http://localhost:8080 (credentials printed in the container log on first boot).
+services:
+  airflow:
+    build: ./airflow
+    container_name: tfl-airflow
+    command: standalone
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env   # SNOWFLAKE_*, TFL_APP_KEY, optional ALERT_WEBHOOK_URL
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: "Europe/London"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ..:/repo

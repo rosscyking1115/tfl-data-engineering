@@ -11,3 +11,7 @@ sources:
           Unified journeys 2022→present across both schema eras. One row per hire;
           240 broken hires quarantined upstream. 312k rows have NULL end_station_code
           (a 2022 header variant) but retain end_station_name.
+      - name: BIKEPOINT_SNAPSHOT
+        description: Daily dock-status snapshot from the TfL Unified API (ingestion/daily_api_ingest.py).
+      - name: LINE_STATUS_SNAPSHOT
+        description: Daily line-status snapshot (rail modes) from the TfL Unified API.

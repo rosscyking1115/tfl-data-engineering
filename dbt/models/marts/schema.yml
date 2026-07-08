@@ -16,6 +16,69 @@ models:
       - name: date_day
         tests: [unique, not_null]
 
+  - name: daily_journey_stats
+    description: Power BI rollup — one row per day.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+      - name: journeys
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1
+
+  - name: station_daily_flows
+    description: Power BI rollup — departures/arrivals per station per day.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [date_key, station_key]
+    columns:
+      - name: station_key
+        tests: [not_null]
+
+  - name: bikepoint_daily_snapshot
+    description: Daily dock-status snapshot; one row per dock per day.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [snapshot_date, bikepoint_id]
+    columns:
+      - name: bikepoint_id
+        tests: [not_null]
+      - name: date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: station_key
+        description: Nullable — populated only where the dock name matches a journey-file station name.
+        tests:
+          - relationships:
+              to: ref('dim_station')
+              field: station_key
+      - name: n_bikes
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+  - name: line_status_daily
+    description: Daily line status; one row per line per status per day.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [snapshot_date, line_id, status_severity, status_description]
+    columns:
+      - name: line_id
+        tests: [not_null]
+      - name: mode
+        tests:
+          - accepted_values:
+              values: ["tube", "dlr", "overground", "elizabeth-line", "tram"]
+      - name: date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+
   - name: fact_journey
     description: One row per hire, 2022 → present.
     tests:
