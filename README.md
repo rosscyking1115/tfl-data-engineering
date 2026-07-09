@@ -35,7 +35,10 @@ demand** — an effect this platform quantifies per station against a weather-ad
 - **Live & durable, for free.** A daily GitHub Actions job refreshes live Line Status +
   dock occupancy into committed Parquet; the app reads it via DuckDB with no warehouse — so
   it keeps running long after the Snowflake trial ends.
-- **Interactive & AI-queryable.** A Streamlit app (disruption impact · today's network ·
+- **Ask it in English.** An "Ask the data" chat page: Claude answers questions by calling
+  curated, read-only tools over the gold layer — it reports only numbers a tool returned and
+  declines out-of-scope questions rather than fabricate ([ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md)).
+- **Interactive & AI-queryable.** A Streamlit app (ask · disruption impact · today's network ·
   usage trends · station explorer), plus a read-only MCP server exposing the warehouse to AI
   clients through typed, guardrailed tools.
 - **Frugal by design.** The entire warehouse build cost **~$1** on an XS warehouse with
@@ -111,6 +114,7 @@ docs/        ADRs, architecture and engineering notes
 - [ADR-0004](docs/adr/ADR-0004-mcp-readonly-boundary.md) — MCP read-only guardrails
 - [ADR-0005](docs/adr/ADR-0005-streamlit-demo-layer.md) — the demo layer & durable hosting
 - [ADR-0006](docs/adr/ADR-0006-pivot-to-live-disruption-workflow.md) — pivot to the live disruption workflow & the journey-lag honesty split
+- [ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md) — QA assistant: curated tool-calling over text-to-SQL
 
 ## How it stays live
 

@@ -7,3 +7,6 @@ pandas==3.0.3
 pyarrow==24.0.0
 numpy==2.5.1
 altair==6.2.2
+# QA assistant ("Ask the data" page). The page stays inert unless ANTHROPIC_API_KEY
+# is set — keep that key OUT of public Streamlit secrets (see ADR-0007).
+anthropic==0.116.0
