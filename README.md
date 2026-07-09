@@ -5,11 +5,7 @@ messy, multi-format journey files unified into a tested warehouse model and serv
 an interactive app — with a flagship analysis of **how transport disruptions reshape
 cycling demand** across London.
 
-**[▶ Live demo](https://share.streamlit.io/)** · [Engineering notes](docs/) · [Architecture](#architecture)
-
-> [!NOTE]
-> Built as a rigorous, honestly-scoped portfolio project. Each tool is used only where the
-> data justifies it, and every non-obvious decision is recorded as an [ADR](docs/adr/).
+**[▶ Live demo](https://tfl-data-engineering.streamlit.app/)** · [Engineering notes](docs/) · [Architecture](#architecture)
 
 ## Overview
 
@@ -127,7 +123,8 @@ published in bulk with a lag, the design honestly separates **historical quantif
 
 ## Roadmap
 
-- Deploy the app to Streamlit Community Cloud (one-click from the public repo).
+- **Upgrade the baseline into a forecast.** Replace the weather-adjusted median baseline with a
+  learned station-level demand model (gradient-boosted trees), tracked with MLflow and served
+  behind an API — deepening the workflow's core rather than adding an unrelated feature.
 - Accumulate forward dock-occupancy history to unlock short-horizon availability nowcasting
   (not possible today — TfL publishes no historical occupancy).
-- A separate ML project: station-level demand forecasting with MLflow + a serving API.
