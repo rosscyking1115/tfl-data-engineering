@@ -192,9 +192,14 @@ def _system_prompt() -> str:
     )
 
 
-def answer(question: str, history: list | None = None) -> dict:
-    """Run the tool-calling loop. Returns {text, tools_used}."""
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+def answer(question: str, history: list | None = None, api_key: str | None = None) -> dict:
+    """Run the tool-calling loop. Returns {text, tools_used}.
+
+    `api_key` lets a caller pass a per-request key (the public app's bring-your-own-key
+    path); it is used only to build the client and is never stored or logged. Falls back
+    to the environment key (the owner's local `.env`).
+    """
+    client = anthropic.Anthropic(api_key=api_key or os.environ["ANTHROPIC_API_KEY"])
     model = os.getenv("ANTHROPIC_MODEL", MODEL)
     messages = (history or []) + [{"role": "user", "content": question}]
     tools_used = []

@@ -40,9 +40,11 @@ demand** — an effect this platform quantifies per station against a weather-ad
 - **Live & durable, for free.** A daily GitHub Actions job refreshes live Line Status +
   dock occupancy into committed Parquet; the app reads it via DuckDB with no warehouse — so
   it keeps running long after the Snowflake trial ends.
-- **Ask it in English.** An "Ask the data" chat page: Claude answers questions by calling
-  curated, read-only tools over the gold layer — it reports only numbers a tool returned and
-  declines out-of-scope questions rather than fabricate ([ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md)).
+- **Ask it in English.** An "Ask the data" page with two tiers: free **Quick answers** (preset
+  questions answered with no API — every figure exact, including a live "why is this line
+  disrupted now?"), plus an optional **bring-your-own-key** Claude chat that calls curated,
+  read-only tools and reports only numbers a tool returned rather than fabricate
+  ([ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md)).
 - **Interactive & AI-queryable.** A Streamlit app (ask · disruption impact · demand forecast ·
   today's network · usage trends · station explorer), plus a read-only MCP server exposing the
   warehouse to AI clients through typed, guardrailed tools.
@@ -132,6 +134,11 @@ weather-adjusted baseline and the demand-deviation table; the Streamlit app read
 DuckDB. No warehouse, no server — it runs on free tiers indefinitely. Because journey data is
 published in bulk with a lag, the design honestly separates **historical quantification** from
 **live monitoring** rather than claiming real-time trip prediction ([ADR-0006](docs/adr/ADR-0006-pivot-to-live-disruption-workflow.md)).
+
+A second scheduled job ([.github/workflows/keepalive.yml](.github/workflows/keepalive.yml))
+pings the app every few hours so free-tier sleep rarely greets a visitor with a cold start. That's
+a pragmatic mitigation of the Community Cloud free tier, not a Streamlit limit — a truly always-on
+deploy is a small paid host away.
 
 ## Machine learning
 

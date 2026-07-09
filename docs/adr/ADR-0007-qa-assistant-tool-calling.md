@@ -43,3 +43,22 @@ Build the assistant as a **Claude tool-calling loop over a fixed set of curated,
   the assistant locally or via screenshot). The rest of the app needs no key.
 - The separate MCP server (`mcp/`) remains the "AI clients connect directly" demonstration;
   this assistant is the in-app chat. Both share the curated-tools philosophy.
+
+## Addendum (2026-07-09): making it public without exposing the owner's key
+
+To let the public *use* the assistant without the owner's key on the deploy, the Ask page is
+now two tiers:
+
+- **Quick answers (no API, always on).** A small set of preset questions + selectors
+  (`app/quick_answers.py`) render templated natural-language answers straight from the same
+  `data_access` loaders the tools use — no LLM. Every visitor gets useful, exactly-correct
+  answers (including a live "why is this line disrupted now?" from the daily snapshot's `reason`),
+  at zero cost and zero abuse surface. This is the strongest form of the correctness argument
+  above: no model in the loop at all.
+- **Ask anything (bring-your-own-key).** The Claude tool-calling chat stays, but a visitor
+  supplies **their own** Anthropic key (`answer(..., api_key=...)`). The key is held only in
+  `st.session_state` for that browser session — never stored, logged, echoed, or committed, and
+  the owner's key is still never placed in public Streamlit secrets. Cost falls on whoever asks.
+
+The public app therefore leads with the free Quick answers and offers BYOK for free-form — the
+owner spends nothing and no anonymous visitor can spend the owner's credits.
