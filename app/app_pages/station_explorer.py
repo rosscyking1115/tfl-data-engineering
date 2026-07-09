@@ -17,19 +17,23 @@ with st.sidebar:
     top_n = st.slider("How many stations", 5, 25, 10)
 
 with st.container(border=True):
-    st.subheader(f"Top {top_n} stations by {by}")
+    st.subheader(f"Busiest {top_n} stations by {by}")
     top = da.top_stations(str(start), str(end), by, top_n)
-    chart = alt.Chart(top).mark_bar().encode(
-        x=alt.X(f"{by}:Q", title=by.title()),
-        y=alt.Y("station_name:N", sort="-x", title=None),
-        tooltip=["station_name", "departures", "arrivals"],
-    )
+    chart = alt.Chart(top).mark_bar(color="#2563eb").encode(
+        x=alt.X(f"{by}:Q", title=f"Total {by} in range"),
+        y=alt.Y("station_name:N", sort="-x", title=None, axis=alt.Axis(labelLimit=240)),
+        tooltip=[
+            alt.Tooltip("station_name:N", title="Station"),
+            alt.Tooltip("departures:Q", title="Departures", format=","),
+            alt.Tooltip("arrivals:Q", title="Arrivals", format=","),
+        ],
+    ).properties(height=max(300, top_n * 26))
     st.altair_chart(chart, width="stretch")
-
-st.divider()
+    st.caption("Hire hotspots cluster around parks, mainline termini and the City — the "
+               "West End and riverside dominate departures.")
 
 with st.container(border=True):
-    st.subheader("Single-station flow")
+    st.subheader("Single-station flow over time")
     station = st.selectbox("Station", da.station_names(),
                            index=da.station_names().index("Hyde Park Corner, Hyde Park")
                            if "Hyde Park Corner, Hyde Park" in da.station_names() else 0)
