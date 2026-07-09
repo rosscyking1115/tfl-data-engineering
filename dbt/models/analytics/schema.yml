@@ -22,3 +22,19 @@ models:
         tests:
           - not_null
           - dbt_utils.accepted_range: { min_value: 0, inclusive: true }
+
+  - name: demand_deviation_ml
+    description: Actual vs the LightGBM counterfactual baseline, per station per day, disruption-flagged.
+    columns:
+      - name: station_key
+        tests: [not_null]
+      - name: date_key
+        tests: [not_null]
+      - name: departures
+        tests:
+          - not_null
+          - dbt_utils.accepted_range: { min_value: 0, inclusive: true }
+      - name: expected_departures
+        tests:
+          - not_null
+          - dbt_utils.accepted_range: { min_value: 0, inclusive: true }

@@ -135,6 +135,61 @@ def top_movers_on(date_str: str, limit: int = 15) -> pd.DataFrame:
     ).df()
 
 
+# --- ML forecast layer (predicted_demand + demand_deviation_ml) ---
+
+def _ml_dev_path() -> str:
+    return (EXPORT / "demand_deviation_ml.parquet").as_posix()
+
+
+@st.cache_data(ttl="1h")
+def forecast_series(station_name: str) -> pd.DataFrame:
+    """Actual vs the LightGBM baseline over time, for one station."""
+    return duckdb.connect().execute(
+        f"""
+        select date_day,
+               departures           as actual,
+               expected_departures  as predicted,
+               is_disruption
+        from read_parquet('{_ml_dev_path()}')
+        where station_name = ? and expected_departures is not null
+        order by date_day
+        """,
+        [station_name],
+    ).df()
+
+
+@st.cache_data(ttl="1h")
+def forecast_accuracy() -> pd.DataFrame:
+    """Overall mean absolute error of the ML baseline vs the median baseline, on the
+    same station-days (lower is better). The learned model is the sharper 'normal'."""
+    return duckdb.connect().execute(
+        f"""
+        with ml as (
+            select date_key, station_key, abs(deviation) e
+            from read_parquet('{_ml_dev_path()}') where expected_departures is not null
+        ),
+        md as (
+            select date_key, station_key, abs(deviation) e
+            from read_parquet('{_dev_path()}') where expected_departures is not null
+        )
+        select round(avg(ml.e), 2) as ml_mae,
+               round(avg(md.e), 2) as median_mae,
+               count(*)            as n
+        from ml join md on ml.date_key = md.date_key and ml.station_key = md.station_key
+        """
+    ).df()
+
+
+@st.cache_data(ttl="1h")
+def feature_importance() -> pd.DataFrame:
+    path = EXPORT.parent.parent / "ml" / "model" / "feature_importance.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    df["gain_pct"] = 100 * df["gain"] / df["gain"].sum()
+    return df
+
+
 # --- Live layer (live_*.parquet, refreshed by the daily GitHub Action) ---
 
 @st.cache_data(ttl="15m")

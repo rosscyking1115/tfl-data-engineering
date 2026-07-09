@@ -9,3 +9,5 @@ sources:
       - name: station_daily_flows
       - name: dim_station
       - name: weather_daily
+      - name: predicted_demand
+        description: LightGBM counterfactual "normal demand" baseline (ml/predict.py), disruption flag off.

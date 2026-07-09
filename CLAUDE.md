@@ -20,13 +20,15 @@
   API (BikePoint + Line Status) the live layer; weather (Open-Meteo) now built, not optional.
 - **Working stack:** PySpark (backfill), Snowflake (past build), dbt + dbt-duckdb,
   Airflow (local), DuckDB + Parquet (durable), Streamlit (public app), GitHub Actions
-  (runtime), MCP (AI access). Power BI is optional PL-300 practice.
+  (runtime), MCP (AI access), LightGBM + MLflow + FastAPI (demand forecast — ADR-0008,
+  local/free). Power BI is optional PL-300 practice.
 
 ## Environment
 
 - Windows 11; venv at `.venv` (`.venv\Scripts\python.exe`), deps: requests, duckdb,
   pandas, openpyxl, pyspark, snowflake-connector-python, python-dotenv, dbt-snowflake,
-  dbt-duckdb, pyarrow, streamlit, altair, mcp.
+  dbt-duckdb, pyarrow, streamlit, altair, mcp. ML layer (separate `ml/requirements.txt`):
+  lightgbm, mlflow, scikit-learn, holidays, fastapi, uvicorn.
 - Set `PYTHONIOENCODING=utf-8` when a script prints DuckDB tables (cp1252 console).
 - Bulk bucket listing: `https://s3-eu-west-1.amazonaws.com/cycling.data.tfl.gov.uk/`
   (ListObjectsV2; the vanity domain serves an HTML browser, not XML).

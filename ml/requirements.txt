@@ -1,0 +1,14 @@
+# ML layer deps — kept SEPARATE from app/requirements.txt so the Streamlit Cloud
+# image stays lean (the app only needs duckdb + pandas to read predicted_demand.parquet).
+# Install into the project venv:  .venv/Scripts/pip install -r ml/requirements.txt
+lightgbm>=4.5
+mlflow>=3.0
+scikit-learn>=1.5
+holidays>=0.60
+fastapi>=0.115
+uvicorn[standard]>=0.32
+# shared data stack (also pinned in app/requirements.txt)
+duckdb>=1.5
+pandas>=2.2
+pyarrow>=17
+numpy>=2.0

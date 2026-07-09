@@ -32,15 +32,20 @@ demand** — an effect this platform quantifies per station against a weather-ad
   demonstrated failure-alerting path.
 - **Disruption intelligence.** A weather-adjusted baseline isolates the strike effect:
   disruption days run **1.33× median** cycling demand vs normal, with per-station drill-down.
+- **A learned forecast, not just a median.** A LightGBM model predicts station-level daily
+  demand and — by predicting with the disruption flag off — supplies a **counterfactual "normal"
+  baseline** that's ~30% tighter than the median it replaces. Temporally validated: **~21% lower
+  error** than the median and **~28%** than a seasonal-naive on held-out 2026, tracked in MLflow
+  ([ADR-0008](docs/adr/ADR-0008-ml-demand-forecast.md)).
 - **Live & durable, for free.** A daily GitHub Actions job refreshes live Line Status +
   dock occupancy into committed Parquet; the app reads it via DuckDB with no warehouse — so
   it keeps running long after the Snowflake trial ends.
 - **Ask it in English.** An "Ask the data" chat page: Claude answers questions by calling
   curated, read-only tools over the gold layer — it reports only numbers a tool returned and
   declines out-of-scope questions rather than fabricate ([ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md)).
-- **Interactive & AI-queryable.** A Streamlit app (ask · disruption impact · today's network ·
-  usage trends · station explorer), plus a read-only MCP server exposing the warehouse to AI
-  clients through typed, guardrailed tools.
+- **Interactive & AI-queryable.** A Streamlit app (ask · disruption impact · demand forecast ·
+  today's network · usage trends · station explorer), plus a read-only MCP server exposing the
+  warehouse to AI clients through typed, guardrailed tools.
 - **Frugal by design.** The entire warehouse build cost **~$1** on an XS warehouse with
   aggressive auto-suspend.
 
@@ -79,6 +84,7 @@ See [ADR-0002](docs/adr/ADR-0002-spark-in-docker-and-header-variants.md).
 | Batch processing | PySpark (Dockerised) |
 | Warehouse | Snowflake (build) → DuckDB + Parquet (durable, free) |
 | Transformation & tests | dbt |
+| Machine learning | LightGBM · MLflow · scikit-learn · FastAPI |
 | Orchestration | Airflow · GitHub Actions |
 | App & AI access | Streamlit · Model Context Protocol |
 | Enrichment | TfL Unified API · Open-Meteo |
@@ -100,6 +106,7 @@ To reproduce the warehouse build (Spark → Snowflake → dbt), see [docs/](docs
 ingestion/   API loaders, warehouse loaders, data-export scripts
 spark/       multi-era backfill job
 dbt/         staging + marts models, tests, seeds
+ml/          demand model — features, LightGBM training (MLflow), batch predict, FastAPI serving
 app/         Streamlit app (DuckDB over committed gold Parquet)
 mcp/         read-only MCP server over the gold layer
 infra/       Airflow (Docker Compose), run scripts
@@ -115,6 +122,7 @@ docs/        ADRs, architecture and engineering notes
 - [ADR-0005](docs/adr/ADR-0005-streamlit-demo-layer.md) — the demo layer & durable hosting
 - [ADR-0006](docs/adr/ADR-0006-pivot-to-live-disruption-workflow.md) — pivot to the live disruption workflow & the journey-lag honesty split
 - [ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md) — QA assistant: curated tool-calling over text-to-SQL
+- [ADR-0008](docs/adr/ADR-0008-ml-demand-forecast.md) — learned demand baseline: LightGBM as a counterfactual, temporally validated
 
 ## How it stays live
 
@@ -125,10 +133,27 @@ DuckDB. No warehouse, no server — it runs on free tiers indefinitely. Because 
 published in bulk with a lag, the design honestly separates **historical quantification** from
 **live monitoring** rather than claiming real-time trip prediction ([ADR-0006](docs/adr/ADR-0006-pivot-to-live-disruption-workflow.md)).
 
+## Machine learning
+
+A LightGBM model ([`ml/`](ml/)) learns daily station-level departures from calendar, weather,
+disruption and recent-demand lag features. It serves two purposes at once:
+
+- **A sharper baseline.** Predicting with the disruption flag off yields a counterfactual "normal
+  demand" that replaces the coarse median in the deviation analysis (`demand_deviation_ml`).
+- **A validated forecast.** Trained with strict temporal validation (fit 2022→24, held-out 2026),
+  it cuts error **~21% vs the median** and **~28% vs a seasonal-naive** baseline; runs are tracked
+  in MLflow and it's served locally via FastAPI (`ml/serve.py`, `+ Dockerfile`). See
+  [ADR-0008](docs/adr/ADR-0008-ml-demand-forecast.md).
+
+```bash
+.venv/Scripts/pip install -r ml/requirements.txt
+python ml/train.py        # LightGBM + MLflow tracking (local SQLite store)
+python ml/predict.py      # → app/gold_export/predicted_demand.parquet
+uvicorn serve:app --app-dir ml --port 8000   # local /predict endpoint
+```
+
 ## Roadmap
 
-- **Upgrade the baseline into a forecast.** Replace the weather-adjusted median baseline with a
-  learned station-level demand model (gradient-boosted trees), tracked with MLflow and served
-  behind an API — deepening the workflow's core rather than adding an unrelated feature.
 - Accumulate forward dock-occupancy history to unlock short-horizon availability nowcasting
   (not possible today — TfL publishes no historical occupancy).
+- Extend the forecast to an hourly grain (needs a pre-trial Snowflake re-export of hourly flows).
