@@ -10,12 +10,19 @@ from pathlib import Path
 import json
 import os
 
-from dotenv import load_dotenv
 import anthropic
 
 import data_access as da
 
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+# python-dotenv is a local-dev convenience for reading .env; it isn't in the app's
+# (lean) requirements, so on Streamlit Cloud it's absent — skip it gracefully. There's
+# no .env there anyway; a key, if provided, would come from the environment/secrets.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+except ModuleNotFoundError:
+    pass
 
 MODEL = "claude-opus-4-8"  # per the claude-api guidance; set ANTHROPIC_MODEL to override
 MAX_TOOL_TURNS = 6
