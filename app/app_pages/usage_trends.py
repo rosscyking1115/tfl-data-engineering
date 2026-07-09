@@ -37,6 +37,12 @@ with st.container(horizontal=True):
     st.metric("E-bike share", f"{ebike_share:.1%}", border=True)
     st.metric("Days covered", f"{len(df):,}", border=True)
 
+st.caption(
+    f"Across the selected range, **{ebike_share:.0%} of journeys are e-bike** and daily volume "
+    "swings strongly with the seasons — the trend below shows both the seasonal cycle and the "
+    "step change when the file format switched in Sept 2022."
+)
+
 if grain == "Monthly":
     df["period"] = df["date_day"].astype("datetime64[ns]").dt.to_period("M").dt.to_timestamp()
     plot = df.groupby("period", as_index=False).agg(journeys=("journeys", "sum"),

@@ -20,9 +20,14 @@ if not lines.empty:
     snap = lines["snapshot_date"].max()
     st.caption(f"Latest snapshot: {snap}")
     disrupted = lines[~lines["is_good_service"]]
+    n_bad = int((~lines["is_good_service"]).sum())
+    st.markdown(
+        f"**{n_bad} line(s) are not in good service right now.**"
+        if n_bad else "**All tracked lines are running a good service right now.**"
+    )
     with st.container(horizontal=True):
         st.metric("Lines tracked", lines["line_id"].nunique(), border=True)
-        st.metric("Not good service", int((~lines["is_good_service"]).sum()), border=True)
+        st.metric("Not good service", n_bad, border=True)
     with st.container(border=True):
         st.subheader("Line status")
         if disrupted.empty:
