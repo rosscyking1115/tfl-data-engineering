@@ -5,11 +5,10 @@
 
 ## Context
 
-The pipeline is rigorous but backend-only — "nothing to show" a hiring manager can click.
-Research (2026 hiring guides) said a **zero-setup hosted demo** is the single highest-ROI
-"showable" artifact for a data project, and named Streamlit as the default. It also warned
-that fusing an ML/AI layer into this repo would read as a shallow bolt-on for DE roles —
-so the demo must stay a thin *consuming* layer, not a new genre. Power BI (the planned
+The pipeline is rigorous but backend-only — there is nothing a reader can click to see it
+work. A **zero-setup hosted demo** is the single highest-ROI "showable" artifact for a data
+project, and Streamlit is a common default. Fusing an ML/AI layer into this repo would read
+as a shallow bolt-on — so the demo must stay a thin *consuming* layer, not a new genre. Power BI (the planned
 consuming layer) can't be shared publicly on the free tier, which blunts its value as the
 public artifact.
 
@@ -23,7 +22,7 @@ explorer.
 The non-goal targets *product framing* — users, accounts, a thing pretending to be a
 startup. A read-only analytics dashboard is the **same role Power BI already plays** in the
 locked stack: a consuming layer on gold. It adds no auth, no writes, no users. Framed
-honestly in the README as a portfolio demo, not a product.
+honestly in the README as a demo layer, not a product.
 
 ### Why DuckDB + committed Parquet, not a live Snowflake connection
 - **Trial independence:** the Snowflake trial suspends ~2026-08-06, after which queries are

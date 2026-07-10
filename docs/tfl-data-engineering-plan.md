@@ -63,7 +63,7 @@ Spark-class: 10M+ journeys/year, 41M in 2018–2021 alone → full history rough
 **80–100M+ rows across hundreds of files**. Critically for the portfolio story, the
 historical files are **authentically messy**: formats and properties are inconsistent
 across years (CSV, XML, XLS mixes; schema/name drift; station-ID quirks like the
-`BikePoint_` prefix). That mess is a feature — it's the cleaning story hiring managers score.
+`BikePoint_` prefix). That mess is a feature — it's the cleaning story worth telling.
 
 **If Gate 0 selects Option B instead:** swap the backbone to LAQN's historical air-quality
 archive, keep the same medallion shape (§2 below), and change the live/incremental layer to
