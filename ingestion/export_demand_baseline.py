@@ -6,12 +6,11 @@ Exports a station x day-of-week x hour departure profile (avg via departures/n_d
 Tiny (<= 856 stations x 7 x 24 rows), committed to app/gold_export/.
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
 
-from dotenv import load_dotenv
-import pandas as pd
 import snowflake.connector
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "app" / "gold_export"

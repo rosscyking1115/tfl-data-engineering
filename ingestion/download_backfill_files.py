@@ -9,11 +9,11 @@ Idempotent: skips files already present with the expected size. Prints the
 selection and total size before downloading.
 """
 
-from datetime import datetime
-from pathlib import Path
 import csv
 import re
 import sys
+from datetime import datetime
+from pathlib import Path
 
 import requests
 

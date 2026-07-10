@@ -7,8 +7,8 @@ same endpoint shape serves the daily-forward pull in the GitHub Actions cron.
 Writes app/gold_export/weather_daily.parquet (committed — tiny, one row/day).
 """
 
-from pathlib import Path
 import argparse
+from pathlib import Path
 
 import pandas as pd
 import requests

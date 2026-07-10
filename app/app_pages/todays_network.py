@@ -1,9 +1,8 @@
 """Today's network — the live layer, refreshed daily by the GitHub Action."""
 
 import altair as alt
-import streamlit as st
-
 import data_access as da
+import streamlit as st
 
 st.title("Today's network")
 st.caption("Live TfL Line Status + BikePoint dock occupancy, refreshed daily by a "

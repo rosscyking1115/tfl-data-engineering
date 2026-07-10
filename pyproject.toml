@@ -1,0 +1,18 @@
+# Tooling config for the test + lint suite (run in CI). The project ships no package;
+# this file only configures pytest and ruff.
+
+[tool.pytest.ini_options]
+# app/ and ml/ are flat module dirs (no package); expose them for imports.
+pythonpath = ["app", "ml"]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+# Generated/vendored trees are not ours to lint.
+extend-exclude = ["dbt/dbt_packages", "docs", "spark", "infra"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # long lines are allowed; readability over a hard column cap

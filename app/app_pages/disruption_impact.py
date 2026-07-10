@@ -1,10 +1,9 @@
 """Disruption impact — how tube/rail strikes shift cycling demand (the flagship)."""
 
 import altair as alt
+import data_access as da
 import pandas as pd
 import streamlit as st
-
-import data_access as da
 
 BLUE, GREY, RED = "#2563eb", "#9ca3af", "#ef4444"
 

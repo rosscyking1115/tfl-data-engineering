@@ -1,10 +1,9 @@
 """Station explorer — busiest stations and single-station flow over time."""
 
 import altair as alt
+import data_access as da
 import pandas as pd
 import streamlit as st
-
-import data_access as da
 
 st.title("Station explorer")
 st.caption("Reads the gold `station_daily_flows` rollup (station × day) joined to `dim_station`.")

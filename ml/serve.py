@@ -20,7 +20,6 @@ import lightgbm as lgb
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-
 from features import FEATURES, TARGET, build_dataset
 
 ROOT = Path(__file__).resolve().parent.parent

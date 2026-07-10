@@ -1,0 +1,36 @@
+name: ci
+
+# Lint + tests on every push to main and every PR. Keeps the pure-Python logic
+# (feature engineering, the no-API Quick answers, the assistant's tool dispatch) honest.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        # The test suite imports the app deps + `holidays` (used by ml/features.py); it does
+        # NOT need the heavy ml stack (lightgbm/mlflow/fastapi), which also can't co-resolve
+        # with the app's pinned pandas. Install only what the tests actually import.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+          pip install holidays pytest ruff
+
+      - name: Lint (ruff)
+        run: ruff check app ml tests ingestion
+
+      - name: Tests (pytest)
+        run: pytest

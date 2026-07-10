@@ -9,9 +9,8 @@ guarantee, and available to every public visitor.
 
 from __future__ import annotations
 
-import pandas as pd
-
 import data_access as da
+import pandas as pd
 
 
 def why_disrupted() -> str:

@@ -6,9 +6,9 @@ Compact by design: ~800 dock rows + ~20 line rows per day → single-digit MB/ye
 fine to commit for years. Feeds the Streamlit "today's network" panel.
 """
 
+import argparse
 from datetime import datetime, timezone
 from pathlib import Path
-import argparse
 
 import pandas as pd
 import requests
@@ -51,8 +51,12 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     s = requests.Session()
 
-    bp = s.get(f"{API}/BikePoint", timeout=60); bp.raise_for_status(); bp = bp.json()
-    ls = s.get(f"{API}/Line/Mode/{RAIL_MODES}/Status", timeout=60); ls.raise_for_status(); ls = ls.json()
+    bp = s.get(f"{API}/BikePoint", timeout=60)
+    bp.raise_for_status()
+    bp = bp.json()
+    ls = s.get(f"{API}/Line/Mode/{RAIL_MODES}/Status", timeout=60)
+    ls.raise_for_status()
+    ls = ls.json()
     if len(bp) < 700 or len(ls) < 15:
         raise SystemExit(f"quality gate: {len(bp)} bikepoints / {len(ls)} lines (expected ~800/~20)")
 

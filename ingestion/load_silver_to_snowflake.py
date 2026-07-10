@@ -8,12 +8,12 @@ The warehouse is XSMALL with AUTO_SUSPEND=60 — the cost story in the README
 depends on keeping this honest.
 """
 
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
 
-from dotenv import load_dotenv
 import snowflake.connector
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 SILVER = ROOT / "data" / "silver" / "journeys"

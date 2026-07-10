@@ -2,11 +2,10 @@
 
 import os
 
-import streamlit as st
-
 import assistant
 import data_access as da
 import quick_answers as qa
+import streamlit as st
 
 st.title("Ask the data")
 st.caption(

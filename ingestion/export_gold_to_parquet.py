@@ -10,12 +10,12 @@ Exports the import-friendly gold models only. fact_journey (41M rows) is deliber
 excluded — too big for GitHub; the rollups exist precisely so BI never touches it.
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
 
-from dotenv import load_dotenv
 import pandas as pd
 import snowflake.connector
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "app" / "gold_export"
