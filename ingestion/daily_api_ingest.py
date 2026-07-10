@@ -8,16 +8,16 @@ snapshot_date, so re-runs for the same day are idempotent.
 Works keyless (TfL allows low-rate anonymous calls); uses TFL_APP_KEY when set.
 """
 
-from datetime import datetime, timezone
-from pathlib import Path
 import argparse
 import json
 import os
 import sys
+from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
-from dotenv import load_dotenv
 import snowflake.connector
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.tfl.gov.uk"

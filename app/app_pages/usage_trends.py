@@ -1,10 +1,9 @@
 """Usage trends — system-wide daily cycle-hire usage, 2022 → 2026."""
 
 import altair as alt
+import data_access as da
 import pandas as pd
 import streamlit as st
-
-import data_access as da
 
 st.title("Usage trends")
 st.caption(

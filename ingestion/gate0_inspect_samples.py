@@ -4,9 +4,9 @@ a full-history row count from the complete bucket inventory.
 Outputs a markdown summary to docs/gate0/cycle_gate0_findings.md.
 """
 
-from pathlib import Path
 import io
 import zipfile
+from pathlib import Path
 
 import duckdb
 import pandas as pd

@@ -15,7 +15,6 @@ from pathlib import Path
 
 import lightgbm as lgb
 import numpy as np
-
 from features import FEATURES, build_dataset
 
 ROOT = Path(__file__).resolve().parent.parent

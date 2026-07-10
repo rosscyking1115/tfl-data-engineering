@@ -10,7 +10,7 @@ Two measurements the handoff doc says are unverified:
 Writes docs/gate0/laqn_gate0_findings.md.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import requests

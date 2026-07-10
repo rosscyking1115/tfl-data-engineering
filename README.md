@@ -6,6 +6,10 @@ and where?** It pairs a Spark-scale historical backfill with a free, always-runn
 learned demand forecast, and an in-app assistant — the whole thing hosted on free tiers with no
 warehouse to keep alive.
 
+[![CI](https://github.com/rosscyking1115/tfl-data-engineering/actions/workflows/ci.yml/badge.svg)](https://github.com/rosscyking1115/tfl-data-engineering/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/demo-Streamlit-ff4b4b)](https://tfl-data-engineering.streamlit.app/)
+
 **[▶ Live demo](https://tfl-data-engineering.streamlit.app/)** · [Engineering notes](docs/) · [Architecture](#architecture)
 
 ![Disruption impact — the flagship view](docs/img/disruption.png)
@@ -55,7 +59,7 @@ the strike.
   occupancy into committed Parquet; the app reads it via DuckDB with no warehouse — so it keeps
   running long after the Snowflake trial ends.
 - **Tested, dimensional model.** A dbt star schema (`fact_journey`, `dim_station`, `dim_date`) with
-  **48 data tests**, including cross-era station-identity conforming.
+  **53 data tests**, including cross-era station-identity conforming.
 
 ## Screens
 
@@ -165,6 +169,7 @@ ml/          demand model — features, LightGBM training (MLflow), batch predic
 app/         Streamlit app (DuckDB over committed gold Parquet) + Ask assistant
 mcp/         read-only MCP server over the gold layer
 infra/       Airflow (Docker Compose), run scripts
+tests/       pytest suite (feature-leakage guard, Quick answers, tool dispatch) — run in CI
 docs/        ADRs, architecture and engineering notes
 ```
 

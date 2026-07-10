@@ -7,9 +7,9 @@ docs/gate0/cycle_file_inventory.csv (key, size_bytes, last_modified, ext).
 Idempotent; re-run any time. This inventory is also the Phase 1 backfill input.
 """
 
-from pathlib import Path
 import csv
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 import requests
 

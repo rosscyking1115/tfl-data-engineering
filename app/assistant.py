@@ -6,12 +6,11 @@ of validated tools rather than free-form SQL. The model can only return numbers 
 tool produced, and refuses gracefully when a question falls outside the tools.
 """
 
-from pathlib import Path
 import json
 import os
+from pathlib import Path
 
 import anthropic
-
 import data_access as da
 
 # python-dotenv is a local-dev convenience for reading .env; it isn't in the app's

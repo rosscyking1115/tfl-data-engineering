@@ -95,8 +95,17 @@ def _disruption_dates() -> set:
 
 
 def build_dataset() -> pd.DataFrame:
-    """Full modelling frame: one row per station-day, features + target + split label."""
-    df = _load_raw()
+    """Full modelling frame from the committed Parquet: raw rows + engineered features."""
+    return add_features(_load_raw())
+
+
+def add_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Derive calendar, disruption and per-station lag features + the time-split label.
+
+    Pure transform over a raw station-day frame (columns from `_load_raw`) — no I/O — so the
+    leakage-safe lag logic and split boundaries are unit-testable on synthetic input.
+    """
+    df = df.sort_values(["station_key", "date_key"]).reset_index(drop=True)
     df["date_day"] = pd.to_datetime(df["date_key"], format="%Y%m%d")
 
     # --- calendar ---

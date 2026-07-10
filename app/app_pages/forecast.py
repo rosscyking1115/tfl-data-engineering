@@ -1,9 +1,8 @@
 """Demand forecast — the learned baseline that upgrades the median (ADR-0008)."""
 
 import altair as alt
-import streamlit as st
-
 import data_access as da
+import streamlit as st
 
 st.title("Station demand forecast")
 st.caption(
