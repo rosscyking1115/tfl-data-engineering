@@ -1,0 +1,95 @@
+// TfL Cycle-Hire — DAX measures for the Power BI model.
+// Paste these into Power BI Desktop (Modeling → New measure) or import via Tabular Editor.
+// Every measure is cross-checked against the committed Parquet via DuckDB; reference values
+// (no slicer applied) are noted so you can confirm the model loaded correctly.
+//
+// Tables referenced (from powerbi/queries.pq): daily_journey_stats, station_daily_flows,
+// dim_date, dim_station, demand_deviation, demand_deviation_ml, live_line_status, live_bikepoint.
+
+// ─────────────────────────────  Usage  ─────────────────────────────
+
+Total Journeys = SUM ( daily_journey_stats[journeys] )
+    // reference (all dates): 41,376,181
+
+E-bike Journeys = SUM ( daily_journey_stats[ebike_journeys] )
+
+E-bike Share % =
+DIVIDE ( [E-bike Journeys], [Total Journeys] )
+    // reference (all dates): 0.098  ·  format as %
+
+Avg Duration (min) =
+DIVIDE (
+    SUMX ( daily_journey_stats, daily_journey_stats[avg_duration_min] * daily_journey_stats[journeys] ),
+    [Total Journeys]
+)   // journey-weighted, so it stays correct under any date slicer
+
+Active Days = DISTINCTCOUNT ( daily_journey_stats[date_key] )
+
+// ────────────────────────  Station flows  ──────────────────────────
+
+Total Departures = SUM ( station_daily_flows[departures] )
+Total Arrivals   = SUM ( station_daily_flows[arrivals] )
+Net Inflow       = SUM ( station_daily_flows[net_inflow] )   // arrivals − departures
+
+// ──────────────────  Disruption impact (flagship)  ──────────────────
+// Weather-adjusted: deviation_ratio = actual / expected_departures. Filter expected >= 5 to
+// drop tiny/noisy stations, matching the app. 1.00 = exactly expected.
+
+Disruption Demand Ratio =
+MEDIANX (
+    FILTER ( demand_deviation, demand_deviation[is_disruption] = TRUE () && demand_deviation[expected_departures] >= 5 ),
+    demand_deviation[deviation_ratio]
+)   // reference (all dates): 1.329
+
+Normal Demand Ratio =
+MEDIANX (
+    FILTER ( demand_deviation, demand_deviation[is_disruption] = FALSE () && demand_deviation[expected_departures] >= 5 ),
+    demand_deviation[deviation_ratio]
+)   // reference (all dates): 1.000
+
+Disruption Uplift % = [Disruption Demand Ratio] - 1
+    // reference: ~0.33 (a strike day runs ~33% above a comparable normal day)
+
+// ────────────────  Demand forecast (LightGBM vs median)  ────────────
+// Mean absolute error of each baseline vs actual departures. Lower is better.
+
+Forecast MAE (ML) =
+AVERAGEX ( FILTER ( demand_deviation_ml, NOT ISBLANK ( demand_deviation_ml[deviation] ) ), ABS ( demand_deviation_ml[deviation] ) )
+    // reference (all dates): ~5.66
+
+Median Baseline MAE =
+AVERAGEX ( FILTER ( demand_deviation, NOT ISBLANK ( demand_deviation[deviation] ) ), ABS ( demand_deviation[deviation] ) )
+    // reference (all dates): ~8.46
+
+Forecast Improvement % =
+DIVIDE ( [Median Baseline MAE] - [Forecast MAE (ML)], [Median Baseline MAE] )
+    // reference: ~0.33 (the learned baseline cuts error ~33% vs the median)
+
+// ───────────────────  Today's network (live layer)  ─────────────────
+// snapshot_date is text "YYYY-MM-DD"; MAX() gives the latest day (ISO sorts correctly).
+
+Latest Snapshot = MAX ( live_line_status[snapshot_date] )   // reference: 2026-07-10
+
+Lines Not Good Service =
+VAR latest = MAX ( live_line_status[snapshot_date] )
+RETURN
+CALCULATE (
+    DISTINCTCOUNT ( live_line_status[line_name] ),
+    live_line_status[snapshot_date] = latest,
+    live_line_status[is_good_service] = FALSE ()
+)
+
+Docking Stations Now =
+VAR latest = MAX ( live_bikepoint[snapshot_date] )
+RETURN
+CALCULATE ( DISTINCTCOUNT ( live_bikepoint[bikepoint_id] ), live_bikepoint[snapshot_date] = latest )
+
+Docks Empty Now =
+VAR latest = MAX ( live_bikepoint[snapshot_date] )
+RETURN
+CALCULATE ( COUNTROWS ( live_bikepoint ), live_bikepoint[snapshot_date] = latest, live_bikepoint[n_bikes] = 0 )
+
+Docks Full Now =
+VAR latest = MAX ( live_bikepoint[snapshot_date] )
+RETURN
+CALCULATE ( COUNTROWS ( live_bikepoint ), live_bikepoint[snapshot_date] = latest, live_bikepoint[n_empty_docks] = 0 )

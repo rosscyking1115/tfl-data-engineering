@@ -198,6 +198,9 @@ free tier, not a Streamlit limit.
 
 ## Roadmap
 
+- **Power BI (PL-300):** a code-first semantic model over the same durable Parquet lives in
+  [`powerbi/`](powerbi/) — DAX measures, Power Query M, and a TMDL model — ready to assemble into a
+  report in Power BI Desktop.
 - Accumulate forward dock-occupancy history to unlock short-horizon availability nowcasting
   (not possible today — TfL publishes no historical occupancy).
 - Extend the forecast to an hourly grain (needs a pre-trial Snowflake re-export of hourly flows).

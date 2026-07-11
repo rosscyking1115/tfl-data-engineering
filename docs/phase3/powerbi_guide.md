@@ -1,5 +1,11 @@
 # Power BI on the gold layer (PL-300 tie-in)
 
+> [!NOTE]
+> **Superseded by [`powerbi/`](../../powerbi/).** This page describes the original **Snowflake**
+> connection, which is a documented past phase (the trial expires). The current, durable build
+> reads the committed Parquet instead — see [`powerbi/README.md`](../../powerbi/README.md) for the
+> model-as-code (DAX + Power Query M + TMDL) and build guide. This page is kept for history.
+
 The dashboard connects straight to `TFL.GOLD` — no modelling gymnastics in Power BI;
 dbt already shaped everything.
 

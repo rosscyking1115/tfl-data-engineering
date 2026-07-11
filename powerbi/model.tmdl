@@ -1,0 +1,278 @@
+// TfL Cycle-Hire — semantic model expressed as TMDL (Tabular Model Definition Language),
+// the model-as-code that underpins the Power BI report. This is the star schema: fact tables
+// (flows, journeys, deviation, live) each relate to shared dimensions (dim_date, dim_station).
+//
+// STATUS: hand-authored from the committed Parquet schemas and cross-checked against DuckDB.
+// It has NOT been opened/verified in Power BI Desktop in this environment — treat it as the
+// model spec. The guaranteed build path is powerbi/README.md (blank project + paste M + DAX);
+// Tabular Editor users can also consume this TMDL directly.
+//
+// Only the columns used by measures/relationships/pages are listed; Power BI infers the full
+// column set from each Parquet source on refresh. Measures live in powerbi/measures.dax.
+
+// ── Parameter: where the committed gold Parquet lives (set per your local clone) ──
+expression GoldExportFolder =
+        "C:\dev\portfolio\tfl-data-engineering\app\gold_export" meta [
+    IsParameterQuery = true,
+    Type = "Text",
+    IsParameterQueryRequired = true
+]
+
+// ─────────────────────────────  Dimensions  ─────────────────────────────
+
+table dim_date
+    column date_key
+        dataType: int64
+        sourceColumn: date_key
+        isKey: true
+    column date_day
+        dataType: dateTime
+        sourceColumn: date_day
+    column year
+        dataType: int64
+        sourceColumn: year
+    column month_name
+        dataType: string
+        sourceColumn: month_name
+    column day_name
+        dataType: string
+        sourceColumn: day_name
+    column is_weekend
+        dataType: boolean
+        sourceColumn: is_weekend
+
+    partition dim_date = m
+        mode: import
+        source = ```
+                let
+                    Source = Parquet.Document(File.Contents(GoldExportFolder & "\dim_date.parquet"))
+                in
+                    Source
+            ```
+
+table dim_station
+    column station_key
+        dataType: string
+        sourceColumn: station_key
+        isKey: true
+    column station_name
+        dataType: string
+        sourceColumn: station_name
+    column dock_events
+        dataType: int64
+        sourceColumn: dock_events
+
+    partition dim_station = m
+        mode: import
+        source = ```
+                let
+                    Source = Parquet.Document(File.Contents(GoldExportFolder & "\dim_station.parquet"))
+                in
+                    Source
+            ```
+
+// ─────────────────────────────  Facts  ─────────────────────────────
+
+table daily_journey_stats
+    column date_key
+        dataType: int64
+        sourceColumn: date_key
+    column journeys
+        dataType: int64
+        sourceColumn: journeys
+    column ebike_journeys
+        dataType: int64
+        sourceColumn: ebike_journeys
+    column avg_duration_min
+        dataType: double
+        sourceColumn: avg_duration_min
+    column is_weekend
+        dataType: boolean
+        sourceColumn: is_weekend
+
+    partition daily_journey_stats = m
+        mode: import
+        source = ```
+                let
+                    Source = Parquet.Document(File.Contents(GoldExportFolder & "\daily_journey_stats.parquet"))
+                in
+                    Source
+            ```
+
+table station_daily_flows
+    column date_key
+        dataType: int64
+        sourceColumn: date_key
+    column station_key
+        dataType: string
+        sourceColumn: station_key
+    column departures
+        dataType: int64
+        sourceColumn: departures
+    column arrivals
+        dataType: int64
+        sourceColumn: arrivals
+    column net_inflow
+        dataType: int64
+        sourceColumn: net_inflow
+
+    partition station_daily_flows = m
+        mode: import
+        source = ```
+                let
+                    Source = Parquet.Document(File.Contents(GoldExportFolder & "\station_daily_flows.parquet"))
+                in
+                    Source
+            ```
+
+table demand_deviation
+    column date_key
+        dataType: int64
+        sourceColumn: date_key
+    column station_key
+        dataType: string
+        sourceColumn: station_key
+    column expected_departures
+        dataType: double
+        sourceColumn: expected_departures
+    column deviation
+        dataType: double
+        sourceColumn: deviation
+    column deviation_ratio
+        dataType: double
+        sourceColumn: deviation_ratio
+    column is_disruption
+        dataType: boolean
+        sourceColumn: is_disruption
+
+    partition demand_deviation = m
+        mode: import
+        source = ```
+                let
+                    Source = Parquet.Document(File.Contents(GoldExportFolder & "\demand_deviation.parquet"))
+                in
+                    Source
+            ```
+
+table demand_deviation_ml
+    column date_key
+        dataType: int64
+        sourceColumn: date_key
+    column station_key
+        dataType: string
+        sourceColumn: station_key
+    column deviation
+        dataType: double
+        sourceColumn: deviation
+    column deviation_ratio
+        dataType: double
+        sourceColumn: deviation_ratio
+    column is_disruption
+        dataType: boolean
+        sourceColumn: is_disruption
+
+    partition demand_deviation_ml = m
+        mode: import
+        source = ```
+                let
+                    Source = Parquet.Document(File.Contents(GoldExportFolder & "\demand_deviation_ml.parquet"))
+                in
+                    Source
+            ```
+
+// ─────────────────────────────  Live layer  ─────────────────────────────
+
+table live_line_status
+    column snapshot_date
+        dataType: string
+        sourceColumn: snapshot_date
+    column line_name
+        dataType: string
+        sourceColumn: line_name
+    column mode
+        dataType: string
+        sourceColumn: mode
+    column status_description
+        dataType: string
+        sourceColumn: status_description
+    column is_good_service
+        dataType: boolean
+        sourceColumn: is_good_service
+    column reason
+        dataType: string
+        sourceColumn: reason
+
+    partition live_line_status = m
+        mode: import
+        source = ```
+                let
+                    Source = Parquet.Document(File.Contents(GoldExportFolder & "\live_line_status.parquet"))
+                in
+                    Source
+            ```
+
+table live_bikepoint
+    column snapshot_date
+        dataType: string
+        sourceColumn: snapshot_date
+    column bikepoint_id
+        dataType: string
+        sourceColumn: bikepoint_id
+    column common_name
+        dataType: string
+        sourceColumn: common_name
+    column lat
+        dataType: double
+        sourceColumn: lat
+    column lon
+        dataType: double
+        sourceColumn: lon
+    column n_bikes
+        dataType: int64
+        sourceColumn: n_bikes
+    column n_empty_docks
+        dataType: int64
+        sourceColumn: n_empty_docks
+    column fill_rate
+        dataType: double
+        sourceColumn: fill_rate
+
+    partition live_bikepoint = m
+        mode: import
+        source = ```
+                let
+                    Source = Parquet.Document(File.Contents(GoldExportFolder & "\live_bikepoint.parquet"))
+                in
+                    Source
+            ```
+
+// ─────────────────────────────  Relationships  ─────────────────────────────
+// Single-direction (dimension filters fact). date_key → dim_date, station_key → dim_station.
+
+relationship flows_date
+    fromColumn: station_daily_flows.date_key
+    toColumn: dim_date.date_key
+
+relationship flows_station
+    fromColumn: station_daily_flows.station_key
+    toColumn: dim_station.station_key
+
+relationship journeys_date
+    fromColumn: daily_journey_stats.date_key
+    toColumn: dim_date.date_key
+
+relationship deviation_date
+    fromColumn: demand_deviation.date_key
+    toColumn: dim_date.date_key
+
+relationship deviation_station
+    fromColumn: demand_deviation.station_key
+    toColumn: dim_station.station_key
+
+relationship deviation_ml_date
+    fromColumn: demand_deviation_ml.date_key
+    toColumn: dim_date.date_key
+
+relationship deviation_ml_station
+    fromColumn: demand_deviation_ml.station_key
+    toColumn: dim_station.station_key
