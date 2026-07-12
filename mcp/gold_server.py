@@ -1,52 +1,54 @@
-"""Phase 5 (bonus): read-only MCP server over the TfL gold layer.
+"""Read-only MCP server over the TfL gold layer (durable, warehouse-free).
 
-An AI-integration DEMONSTRATION on top of the pipeline, not pipeline machinery
-(Airflow orchestrates the pipeline; this just exposes gold to an AI client).
+An AI-integration DEMONSTRATION on top of the pipeline, not pipeline machinery — it exposes the
+gold layer to an AI client (e.g. Claude Desktop) through a few curated, typed tools.
 
-Design guardrails (see docs/adr/ADR-0004-mcp-readonly-boundary.md):
-- Connects as TFL_GOLD_READONLY and runs `use secondary roles none`, so ACCOUNTADMIN
-  cannot leak in through the trial account's default secondary roles. The role can
-  only SELECT TFL.GOLD — it cannot write, and cannot read SILVER/RAW.
-- Exposes a few CURATED, typed tools with bind parameters — never free-form SQL.
-  The LLM calls a tool or gets nothing; it cannot guess table names or inject SQL.
+Durable by design (see docs/adr/ADR-0004-mcp-readonly-boundary.md): it queries the **committed
+gold Parquet** (`app/gold_export/`) via DuckDB — the same trial-independent source the Streamlit
+app uses — so it keeps working after the Snowflake trial ends, with no credentials.
+
+Guardrails preserved:
+- **Read-only by construction.** DuckDB opens the Parquet read-only; there is no write path and
+  no access to raw/silver — only the curated gold rollups exposed below.
+- **Curated, typed tools with bind parameters — never free-form SQL.** The LLM calls a named tool
+  or gets nothing; it cannot inject SQL or reach tables that aren't exposed here.
 """
 
+from datetime import datetime
 from pathlib import Path
 import logging
-import os
 
-from dotenv import load_dotenv
+import duckdb
 from mcp.server.fastmcp import FastMCP
-import snowflake.connector
 
-# Keep stdout clean for the MCP JSON-RPC stream; silence the connector's chatter.
-logging.getLogger("snowflake.connector").setLevel(logging.WARNING)
+# Keep stdout clean for the MCP JSON-RPC stream.
+logging.getLogger("duckdb").setLevel(logging.WARNING)
 
 ROOT = Path(__file__).resolve().parents[1]
-load_dotenv(ROOT / ".env")
+EXPORT = ROOT / "app" / "gold_export"
 
 mcp = FastMCP("tfl-gold")
 
 
 def _query(sql: str, params: tuple = ()) -> list[dict]:
-    """Open a short-lived read-only connection, run one parameterized query, return rows."""
-    conn = snowflake.connector.connect(
-        account=os.environ["SNOWFLAKE_ACCOUNT"],
-        user=os.environ["SNOWFLAKE_USER"],
-        password=os.environ["SNOWFLAKE_PASSWORD"],
-        role=os.getenv("SNOWFLAKE_MCP_ROLE", "TFL_GOLD_READONLY"),
-        warehouse="TFL_WH",
-        database="TFL",
-        schema="GOLD",
-    )
+    """Run one parameterized query over the committed gold Parquet (read-only) and return rows.
+
+    Views expose only the three gold rollups the tools need — the LLM cannot reach anything else.
+    """
+    con = duckdb.connect()  # fresh in-memory connection; Parquet opened read-only
     try:
-        cur = conn.cursor()
-        cur.execute("use secondary roles none")  # critical: no privilege leakage
-        cur.execute(sql, params)
-        cols = [c[0].lower() for c in cur.description]
-        return [dict(zip(cols, row)) for row in cur.fetchall()]
+        con.execute(
+            f"""
+            create view dim_station as select * from read_parquet('{(EXPORT / "dim_station.parquet").as_posix()}');
+            create view station_daily_flows as select * from read_parquet('{(EXPORT / "station_daily_flows.parquet").as_posix()}');
+            create view daily_journey_stats as select * from read_parquet('{(EXPORT / "daily_journey_stats.parquet").as_posix()}');
+            """
+        )
+        res = con.execute(sql, list(params))
+        cols = [c[0].lower() for c in res.description]
+        return [dict(zip(cols, row)) for row in res.fetchall()]
     finally:
-        conn.close()
+        con.close()
 
 
 @mcp.tool()
@@ -60,10 +62,10 @@ def search_stations(name_substring: str, limit: int = 20) -> list[dict]:
     return _query(
         """
         select station_name, classic_station_id, nextgen_station_code, dock_events
-        from TFL.GOLD.DIM_STATION
-        where station_name ilike %s
+        from dim_station
+        where station_name ilike ?
         order by dock_events desc
-        limit %s
+        limit ?
         """,
         (f"%{name_substring}%", limit),
     )
@@ -80,15 +82,14 @@ def top_stations(start_date: str, end_date: str, by: str = "departures", limit: 
     limit = max(1, min(int(limit), 100))
     return _query(
         f"""
-        select d.station_name,
-               sum(f.departures) as departures,
-               sum(f.arrivals)   as arrivals
-        from TFL.GOLD.STATION_DAILY_FLOWS f
-        join TFL.GOLD.DIM_STATION d on f.station_key = d.station_key
-        where f.date_key between %s and %s
-        group by d.station_name
-        order by sum(f.{metric}) desc
-        limit %s
+        select station_name,
+               sum(departures) as departures,
+               sum(arrivals)   as arrivals
+        from station_daily_flows
+        where date_key between ? and ?
+        group by station_name
+        order by sum({metric}) desc
+        limit ?
         """,
         (_date_key(start_date), _date_key(end_date), limit),
     )
@@ -102,9 +103,9 @@ def daily_usage_trend(start_date: str, end_date: str) -> list[dict]:
     """
     return _query(
         """
-        select date_day, journeys, avg_duration_min, ebike_journeys
-        from TFL.GOLD.DAILY_JOURNEY_STATS
-        where date_key between %s and %s
+        select cast(date_day as varchar) as date_day, journeys, avg_duration_min, ebike_journeys
+        from daily_journey_stats
+        where date_key between ? and ?
         order by date_day
         """,
         (_date_key(start_date), _date_key(end_date)),
@@ -120,11 +121,10 @@ def station_flow(station_name: str, start_date: str, end_date: str) -> list[dict
     """
     return _query(
         """
-        select f.date_key, d.station_name, f.departures, f.arrivals, f.net_inflow
-        from TFL.GOLD.STATION_DAILY_FLOWS f
-        join TFL.GOLD.DIM_STATION d on f.station_key = d.station_key
-        where d.station_name = %s and f.date_key between %s and %s
-        order by f.date_key
+        select date_key, station_name, departures, arrivals, net_inflow
+        from station_daily_flows
+        where station_name = ? and date_key between ? and ?
+        order by date_key
         """,
         (station_name, _date_key(start_date), _date_key(end_date)),
     )
@@ -132,8 +132,6 @@ def station_flow(station_name: str, start_date: str, end_date: str) -> list[dict
 
 def _date_key(d: str) -> int:
     """YYYY-MM-DD -> YYYYMMDD integer (the gold date_key). Validates format."""
-    from datetime import datetime
-
     return int(datetime.strptime(d.strip(), "%Y-%m-%d").strftime("%Y%m%d"))
 
 

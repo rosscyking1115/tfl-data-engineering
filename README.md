@@ -133,7 +133,8 @@ figure ([ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md)):
   owner's Anthropic credits are never spent by anonymous visitors.
 
 A separate read-only **MCP server** ([`mcp/`](mcp/)) exposes the same gold layer to AI clients
-through typed, guardrailed tools.
+through typed, guardrailed tools — reading the committed Parquet via DuckDB, so it needs no
+warehouse or credentials ([ADR-0004](docs/adr/ADR-0004-mcp-readonly-boundary.md)).
 
 ## Tech stack
 

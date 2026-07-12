@@ -44,3 +44,18 @@ isn't covered, the fix is to add a curated tool, not to open a raw SQL door.
 - Cost stays trivial: tools hit XS `TFL_WH` (60 s auto-suspend); each call is one short
   query.
 - Framed in the README as AI-adjacent demonstration; the pipeline stands alone without it.
+
+## Addendum (2026-07-10): retargeted to the committed Parquet (durable)
+
+The server now queries the **committed gold Parquet** (`app/gold_export/`) via DuckDB instead of
+Snowflake — the same trial-independent source as the Streamlit app — so the demonstration keeps
+working after the trial ends, with no credentials. The four curated tools and their contracts are
+unchanged; only `_query()` swapped its backend.
+
+The read-only guarantee now comes from **DuckDB-over-Parquet**: the connection opens the files
+read-only (no write path) and the tools expose only three gold rollups as views, so an errant or
+prompt-injected call cannot write or reach un-curated data — the same property the Snowflake role
+gave, without a warehouse. Decision 2 (curated typed tools, no free-form SQL) stands as the primary
+guardrail. The original Snowflake `TFL_GOLD_READONLY` + `use secondary roles none` design above is
+**retained as history** — it records a real verification finding (the `DEFAULT_SECONDARY_ROLES=ALL`
+leak) worth keeping even though the runtime no longer depends on it.

@@ -3,7 +3,7 @@
     "tfl-gold": {
       "command": ".venv/Scripts/python.exe",
       "args": ["mcp/gold_server.py"],
-      "description": "Read-only MCP tools over the TfL gold layer (Phase 5 bonus). Creds from .env; connects as TFL_GOLD_READONLY."
+      "description": "Read-only MCP tools over the TfL gold layer (Phase 5 bonus). Reads committed gold Parquet via DuckDB — no warehouse, no credentials."
     }
   }
 }
