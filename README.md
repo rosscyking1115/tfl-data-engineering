@@ -13,10 +13,10 @@ warehouse to keep alive.
 **[▶ Live demo](https://tfl-data-engineering.streamlit.app/)** · [Engineering notes](docs/) · [Architecture](#architecture)
 
 > One of three UK open-data builds on my profile — siblings
-> [movein](https://github.com/rosscyking1115/movein) (analytics engineering:
-> Dagster, 197 dbt tests, published dbt docs) and
-> [after-midnight](https://github.com/rosscyking1115/after-midnight) (a decision system
-> with LP/MILP optimisation and a forecast-vs-actual retro). Full project map →
+> [uk-housing-decision-support](https://github.com/rosscyking1115/uk-housing-decision-support)
+> (analytics engineering: Dagster, 197 dbt tests, published dbt docs) and
+> [community-energy-flex](https://github.com/rosscyking1115/community-energy-flex) (a decision
+> system with LP/MILP optimisation and a forecast-vs-actual retro). Full project map →
 > [profile](https://github.com/rosscyking1115).
 
 ![Disruption impact — the flagship view](docs/img/disruption.png)
