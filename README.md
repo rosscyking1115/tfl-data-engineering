@@ -41,7 +41,8 @@ the strike.
 
 - **Real scale, real mess.** A PySpark backfill unifies **41.4M journeys (2022–2026)** across five
   distinct file schemas — columns renamed, dropped and re-ordered between eras — with per-file
-  reconciliation proving no rows are silently lost.
+  reconciliation proving no rows are silently lost
+  ([captured warehouse evidence](docs/snowflake_evidence.md)).
 - **The right tool for each job.** Spark for the multi-era backfill; plain Python for the
   kilobyte-sized daily API pulls. Both rationales are documented — see
   [the Spark ↔ Python boundary](#the-sparkpython-boundary).
@@ -196,6 +197,7 @@ free tier, not a Streamlit limit.
 - [ADR-0006](docs/adr/ADR-0006-pivot-to-live-disruption-workflow.md) — pivot to the live disruption workflow & the journey-lag honesty split
 - [ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md) — QA assistant: curated tool-calling over text-to-SQL, plus the public/BYOK design
 - [ADR-0008](docs/adr/ADR-0008-ml-demand-forecast.md) — learned demand baseline: LightGBM as a counterfactual, temporally validated
+- [Snowflake evidence](docs/snowflake_evidence.md) — warehouse-side facts (41.4M silver rows, gold sizes, ~1 credit cost) captured before the trial expired
 
 ## Roadmap
 
