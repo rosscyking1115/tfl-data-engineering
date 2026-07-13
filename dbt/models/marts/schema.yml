@@ -61,10 +61,14 @@ models:
               min_value: 0
 
   - name: line_status_daily
-    description: Daily line status; one row per line per status per day.
+    description: >
+      Daily line status; one row per line per distinct status per day. A line can carry two
+      statuses at the SAME severity + description that differ only in the reason text (e.g.
+      Weaver on 2026-07-13: "Part Suspended" twice, one adding "SEVERE DELAYS on the rest of
+      the line") — so disruption_reason is part of the natural key.
     tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns: [snapshot_date, line_id, status_severity, status_description]
+          combination_of_columns: [snapshot_date, line_id, status_severity, status_description, disruption_reason]
     columns:
       - name: line_id
         tests: [not_null]
