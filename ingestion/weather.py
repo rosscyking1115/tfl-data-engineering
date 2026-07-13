@@ -23,8 +23,18 @@ DAILY = ["temperature_2m_mean", "temperature_2m_max", "precipitation_sum",
          "rain_sum", "wind_speed_10m_max", "weather_code"]
 
 
+def _retrying_session() -> requests.Session:
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+
+    s = requests.Session()
+    s.mount("https://", HTTPAdapter(max_retries=Retry(
+        total=5, backoff_factor=2.0, status_forcelist=(429, 500, 502, 503, 504))))
+    return s
+
+
 def fetch(start: str, end: str) -> pd.DataFrame:
-    resp = requests.get(
+    resp = _retrying_session().get(
         ARCHIVE,
         params={
             "latitude": LAT, "longitude": LON,

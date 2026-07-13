@@ -60,6 +60,20 @@ def compute_fill_rate(bp_df: pd.DataFrame) -> pd.Series:
     return (n_bikes / n_docks.where(n_docks > 0)).astype(float).round(3)
 
 
+def retrying_session() -> requests.Session:
+    """Transient network/5xx/429 blips must not fail a run (and lose a permanent snapshot
+    day): retry with backoff, honouring TfL's generous 500 req/min limit trivially."""
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+
+    s = requests.Session()
+    retry = Retry(total=5, backoff_factor=2.0,
+                  status_forcelist=(429, 500, 502, 503, 504),
+                  allowed_methods=("GET",))
+    s.mount("https://", HTTPAdapter(max_retries=retry))
+    return s
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", default=datetime.now(timezone.utc).date().isoformat())
@@ -67,7 +81,7 @@ def main() -> None:
     day = args.date
     pulled_at = datetime.now(timezone.utc).isoformat()
     OUT.mkdir(parents=True, exist_ok=True)
-    s = requests.Session()
+    s = retrying_session()
 
     bp = s.get(f"{API}/BikePoint", timeout=60)
     bp.raise_for_status()

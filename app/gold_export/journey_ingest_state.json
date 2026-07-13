@@ -1,0 +1,6 @@
+{
+  "note": "Increment watermark for ingestion/journey_increment.py. Extracts <= max_extract are covered by the Spark backfill (through 444JourneyDataExtract17May2026-31May2026.csv); newer files are ingested incrementally.",
+  "max_extract": 444,
+  "max_end_date": "2026-05-31",
+  "ingested": []
+}

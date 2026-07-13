@@ -185,10 +185,13 @@ docs/        ADRs, architecture and engineering notes
 
 ## How it stays live
 
-A daily GitHub Actions job ([.github/workflows/daily.yml](.github/workflows/daily.yml)) ingests
-live line status and dock occupancy into committed Parquet; `dbt-duckdb` refreshes the
-weather-adjusted baseline and the demand-deviation tables; the Streamlit app reads it all via
-DuckDB. No warehouse, no server — it runs on free tiers indefinitely. A second scheduled job
+A daily GitHub Actions job ([.github/workflows/daily.yml](.github/workflows/daily.yml)) snapshots
+live line status and dock occupancy, ingests newly published journey CSVs
+([`journey_increment.py`](ingestion/journey_increment.py) — schema-gated, idempotent), rebuilds
+the analytics layer with **dbt tests gating delivery**, and appends a run-metadata audit row; a
+red run auto-opens a GitHub issue. The app's **Pipeline health** page shows coverage, freshness
+and the audit trail — gaps included. No warehouse, no server — it runs on free tiers
+indefinitely. A second scheduled job
 ([.github/workflows/keepalive.yml](.github/workflows/keepalive.yml)) pings the app every few hours
 so free-tier sleep rarely greets a visitor with a cold start — a pragmatic mitigation of the
 free tier, not a Streamlit limit.

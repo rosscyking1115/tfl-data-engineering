@@ -19,5 +19,6 @@ pages = [
     st.Page("app_pages/usage_trends.py", title="Usage trends", icon=":material/trending_up:"),
     st.Page("app_pages/station_explorer.py", title="Station explorer", icon=":material/location_on:"),
     st.Page("app_pages/ask.py", title="Ask the data", icon=":material/chat:"),
+    st.Page("app_pages/pipeline_health.py", title="Pipeline health", icon=":material/monitor_heart:"),
 ]
 st.navigation(pages).run()
