@@ -12,12 +12,11 @@ each well under GitHub's limits). Read-only; idempotent (overwrites per-year fil
 Run once while the trial is live:  .venv/Scripts/python ingestion/export_hourly_rollup.py
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
 
-from dotenv import load_dotenv
-import pandas as pd
 import snowflake.connector
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")

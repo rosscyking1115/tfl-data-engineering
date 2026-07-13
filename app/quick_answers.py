@@ -54,8 +54,8 @@ def strike_effect() -> str:
     return (
         f"On strike days, cycling runs at **{ratio:.2f}× a weather-adjusted normal** — about "
         f"**{uplift:+.0f}%** more than a comparable non-strike day (median across "
-        f"{int(disr['n_dates'])} disruption days). Warm-weather strikes surge most (up to ~2.3×); "
-        f"cold-January strikes stay near or below normal — the weather control keeps that honest."
+        f"{int(disr['n_dates'])} source-cited disruption days). Full network strikes surge up to "
+        f"~2.3×; only a stations-only partial action and a knock-on day sit near baseline."
     )
 
 

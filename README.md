@@ -40,9 +40,9 @@ into a clean, tested analytical layer, then builds three things on top:
 - **A live, durable runtime** — a daily GitHub Actions job that refreshes line status and dock
   occupancy into committed Parquet, so the app keeps running with no warehouse and no server.
 
-The headline result: strike days drive **1.2×–2.6× normal cycling demand** — an effect this
-platform measures against a weather-adjusted baseline, so ordinary weather is never mistaken for
-the strike.
+The headline result: full-network strike days drive up to **~2.3× normal cycling demand**
+(median **1.42×** across 13 source-cited events) — measured against a weather-adjusted baseline,
+so ordinary weather is never mistaken for the strike.
 
 ## Highlights
 
@@ -54,7 +54,8 @@ the strike.
   kilobyte-sized daily API pulls. Both rationales are documented — see
   [the Spark ↔ Python boundary](#the-sparkpython-boundary).
 - **Disruption intelligence.** A weather-adjusted baseline isolates the strike effect: disruption
-  days run **1.33× median** cycling demand vs normal, with per-station drill-down.
+  days run **1.42× median** cycling demand vs normal, with per-station drill-down — every
+  event date source-cited.
 - **A learned forecast, not just a median.** A LightGBM model predicts station-level daily demand
   and — by predicting with the disruption flag off — supplies a counterfactual "normal" baseline
   that's ~30% tighter than the median it replaces (**~21% lower error** on held-out 2026), tracked

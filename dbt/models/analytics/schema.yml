@@ -23,6 +23,26 @@ models:
           - not_null
           - dbt_utils.accepted_range: { min_value: 0, inclusive: true }
 
+  - name: disruption_events
+    description: >
+      De-duplicated disruption events from the daily line-status snapshot log (severity<10
+      qualifies; consecutive line-days collapse to one event). The forward-accumulating
+      complement to the citation-backed strike seed.
+    columns:
+      - name: line_id
+        tests: [not_null]
+      - name: start_date
+        tests: [not_null]
+      - name: end_date
+        tests: [not_null]
+      - name: worst_severity
+        tests:
+          - not_null
+          - dbt_utils.accepted_range: { min_value: 0, max_value: 9, inclusive: true }
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [line_id, start_date]
+
   - name: demand_deviation_ml
     description: Actual vs the LightGBM counterfactual baseline, per station per day, disruption-flagged.
     columns:

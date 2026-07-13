@@ -1,16 +1,14 @@
-date,union,mode,severity,note
-2022-06-06,RMT,tube,major,Jobs and pensions dispute
-2022-06-07,RMT,tube,knock_on,Day after 6 Jun walkout (residual disruption)
-2022-06-21,RMT,tube,major,National rail + tube; compulsory redundancies/pensions
-2022-08-19,RMT+Unite,tube,major,Pensions jobs and working conditions
-2022-11-10,RMT+Unite,tube,major,Jobs and pensions
-2022-11-25,RMT,tube,partial,Station staff (600 posts) - stations only
-2023-03-15,RMT,tube,major,All stations; pensions/working arrangements (Budget day)
-2023-03-16,RMT,tube,knock_on,Residual disruption after 15 Mar
-2024-01-08,RMT,tube,major,Below-inflation pay; rolling tube action 5-11 Jan
-2024-01-10,RMT,tube,major,Below-inflation pay; rolling tube action 5-11 Jan
-2025-09-07,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep
-2025-09-08,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep
-2025-09-09,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep
-2025-09-10,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep
-2025-09-11,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep
+date,union,mode,severity,note,source_url
+2022-06-06,RMT,tube,major,Jobs and pensions dispute,https://en.wikipedia.org/wiki/London_Underground_strikes
+2022-06-07,RMT,tube,knock_on,Day after 6 Jun walkout (residual disruption),https://en.wikipedia.org/wiki/London_Underground_strikes
+2022-06-21,RMT,tube,major,National rail + tube; compulsory redundancies/pensions,https://en.wikipedia.org/wiki/2022%E2%80%932024_United_Kingdom_railway_strikes
+2022-08-19,RMT+Unite,tube,major,Pensions jobs and working conditions,https://en.wikipedia.org/wiki/2022%E2%80%932024_United_Kingdom_railway_strikes
+2022-11-10,RMT+Unite,tube,major,Jobs and pensions,https://en.wikipedia.org/wiki/London_Underground_strikes
+2022-11-25,RMT,tube,partial,Station staff (600 posts) - stations only,https://en.wikipedia.org/wiki/London_Underground_strikes
+2023-03-15,RMT,tube,major,All stations; pensions/working arrangements (Budget day),https://en.wikipedia.org/wiki/London_Underground_strikes
+2023-03-16,RMT,tube,knock_on,Residual disruption after 15 Mar,https://en.wikipedia.org/wiki/London_Underground_strikes
+2025-09-07,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep,https://en.wikipedia.org/wiki/London_Underground_strikes
+2025-09-08,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep,https://en.wikipedia.org/wiki/London_Underground_strikes
+2025-09-09,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep,https://en.wikipedia.org/wiki/London_Underground_strikes
+2025-09-10,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep,https://en.wikipedia.org/wiki/London_Underground_strikes
+2025-09-11,RMT,tube,major,Pay/fatigue/shift patterns; rolling action 7-12 Sep,https://en.wikipedia.org/wiki/London_Underground_strikes

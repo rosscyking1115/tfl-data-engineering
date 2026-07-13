@@ -34,7 +34,7 @@ version-controlled rather than a black-box `.pbix`. It reads the **committed Par
    `demand_deviation[date_key] → dim_date[date_key]`, `[station_key] → dim_station[station_key]`,
    and the same two for `demand_deviation_ml`.
 5. Paste each measure from [`measures.dax`](measures.dax) (*Modeling → New measure*). Confirm a
-   card of **Disruption Demand Ratio** shows **≈ 1.33** and **Forecast Improvement %** ≈ **33%** —
+   card of **Disruption Demand Ratio** shows **≈ 1.42** and **Forecast Improvement %** ≈ **33%** —
    that's your "model loaded correctly" check.
 6. Build the pages below, then *Publish* (or screenshot for the repo).
 
@@ -46,7 +46,7 @@ version-controlled rather than a black-box `.pbix`. It reads the **committed Par
    journeys-per-day line by `dim_date[date_day]` (the Sept-2022 era switch is visible); a
    weekday-vs-weekend bar (`dim_date[is_weekend]`).
 2. **Disruption impact** (flagship) — cards: *Normal Demand Ratio* (≈1.00) vs *Disruption Demand
-   Ratio* (≈1.33) and *Disruption Uplift %*; a bar of `deviation_ratio` by disruption date with a
+   Ratio* (≈1.42) and *Disruption Uplift %*; a bar of `deviation_ratio` by disruption date with a
    reference line at 1.0.
 3. **Today's network** — a table of the latest not-good-service lines
    (`live_line_status`, filtered to *Latest Snapshot*, showing `line_name`, `status_description`,

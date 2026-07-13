@@ -35,7 +35,7 @@ if not head.empty:
                 help=f"Median across {int(disr['n_dates'])} disruption days",
             )
     st.caption(
-        "Read as a multiple of normal: **1.00× = exactly expected**, so 1.33× means a third "
+        "Read as a multiple of normal: **1.00× = exactly expected**, so 1.42× means 42% "
         "more cycling than a comparable non-strike day."
     )
 
@@ -59,10 +59,11 @@ bars = alt.Chart(dates).mark_bar().encode(
 rule = alt.Chart(dates).mark_rule(color=RED, strokeDash=[4, 4]).encode(x=alt.datum(1.0))
 st.altair_chart(bars + rule, width="stretch")
 st.caption(
-    "Blue = more cycling than normal; the dashed red line is a normal day. Warm-weather "
-    "strikes drive the biggest surges (up to ~2.3×), while the cold-January 2024 strikes sit "
-    "*below* the line — people didn't switch to bikes in the cold. The weather adjustment is "
-    "what makes that distinction honest."
+    "Blue = more cycling than normal; the dashed red line is a normal day. Every full network "
+    "strike lifts demand; the only near-baseline days are a stations-only partial action "
+    "(25 Nov 2022) and a residual knock-on day — severity, not weather, explains the spread. "
+    "Each event is source-cited in the repo; a citation audit removed two January 2024 dates "
+    "whose strike was called off."
 )
 
 # --- Where the demand landed ---------------------------------------------------------------
