@@ -42,6 +42,24 @@ def upsert(path: Path, df: pd.DataFrame, date_col: str, snapshot_date: str) -> N
     df.to_parquet(path, index=False)
 
 
+def check_quality(n_bikepoints: int, n_lines: int) -> None:
+    """Row-count quality gate: a short payload means a broken/partial API response —
+    fail loudly rather than commit a bad snapshot (tested in tests/test_pipeline_guards.py)."""
+    if n_bikepoints < 700 or n_lines < 15:
+        raise SystemExit(
+            f"quality gate: {n_bikepoints} bikepoints / {n_lines} lines (expected ~800/~20)"
+        )
+
+
+def compute_fill_rate(bp_df: pd.DataFrame) -> pd.Series:
+    """NA-safe occupancy: a dock with missing/corrupt counts yields NaN (no data ≠ zero),
+    never a crash. Object-dtype NA broke .round() and cost the 2026-07-11..13 snapshots —
+    regression-tested in tests/test_pipeline_guards.py."""
+    n_bikes = pd.to_numeric(bp_df["n_bikes"], errors="coerce")
+    n_docks = pd.to_numeric(bp_df["n_docks"], errors="coerce")
+    return (n_bikes / n_docks.where(n_docks > 0)).astype(float).round(3)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", default=datetime.now(timezone.utc).date().isoformat())
@@ -57,8 +75,7 @@ def main() -> None:
     ls = s.get(f"{API}/Line/Mode/{RAIL_MODES}/Status", timeout=60)
     ls.raise_for_status()
     ls = ls.json()
-    if len(bp) < 700 or len(ls) < 15:
-        raise SystemExit(f"quality gate: {len(bp)} bikepoints / {len(ls)} lines (expected ~800/~20)")
+    check_quality(len(bp), len(ls))
 
     bp_df = pd.DataFrame([{
         "snapshot_date": day, "pulled_at": pulled_at,
@@ -67,7 +84,7 @@ def main() -> None:
         "n_bikes": as_int(prop(p, "NbBikes")), "n_empty_docks": as_int(prop(p, "NbEmptyDocks")),
         "n_docks": as_int(prop(p, "NbDocks")), "n_ebikes": as_int(prop(p, "NbEBikes")),
     } for p in bp])
-    bp_df["fill_rate"] = (bp_df["n_bikes"] / bp_df["n_docks"].replace(0, pd.NA)).round(3)
+    bp_df["fill_rate"] = compute_fill_rate(bp_df)
 
     ls_rows = []
     for ln in ls:
