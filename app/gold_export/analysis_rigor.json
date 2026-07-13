@@ -1,0 +1,202 @@
+{
+  "generated_at": "2026-07-13 19:37 UTC",
+  "seed": 42,
+  "method": "cluster bootstrap over event days; dow-matched placebo; see ADR-0009",
+  "headline": {
+    "median_ratio": 1.423,
+    "ci95_lo": 1.241,
+    "ci95_hi": 1.608,
+    "n_events": 13,
+    "n_bootstrap": 2000
+  },
+  "per_event": [
+    {
+      "date": "2022-06-06",
+      "ratio": 1.577,
+      "ci_lo": 1.535,
+      "ci_hi": 1.618,
+      "severity": "major",
+      "n_stations": 786
+    },
+    {
+      "date": "2022-06-07",
+      "ratio": 1.653,
+      "ci_lo": 1.618,
+      "ci_hi": 1.691,
+      "severity": "knock_on",
+      "n_stations": 781
+    },
+    {
+      "date": "2022-06-21",
+      "ratio": 2.085,
+      "ci_lo": 2.021,
+      "ci_hi": 2.147,
+      "severity": "major",
+      "n_stations": 788
+    },
+    {
+      "date": "2022-08-19",
+      "ratio": 2.336,
+      "ci_lo": 2.27,
+      "ci_hi": 2.4,
+      "severity": "major",
+      "n_stations": 791
+    },
+    {
+      "date": "2022-11-10",
+      "ratio": 1.417,
+      "ci_lo": 1.384,
+      "ci_hi": 1.451,
+      "severity": "major",
+      "n_stations": 792
+    },
+    {
+      "date": "2022-11-25",
+      "ratio": 0.946,
+      "ci_lo": 0.928,
+      "ci_hi": 0.964,
+      "severity": "partial",
+      "n_stations": 790
+    },
+    {
+      "date": "2023-03-15",
+      "ratio": 1.53,
+      "ci_lo": 1.492,
+      "ci_hi": 1.569,
+      "severity": "major",
+      "n_stations": 791
+    },
+    {
+      "date": "2023-03-16",
+      "ratio": 1.0,
+      "ci_lo": 0.974,
+      "ci_hi": 1.023,
+      "severity": "knock_on",
+      "n_stations": 794
+    },
+    {
+      "date": "2025-09-07",
+      "ratio": 1.179,
+      "ci_lo": 1.154,
+      "ci_hi": 1.206,
+      "severity": "major",
+      "n_stations": 794
+    },
+    {
+      "date": "2025-09-08",
+      "ratio": 1.497,
+      "ci_lo": 1.465,
+      "ci_hi": 1.532,
+      "severity": "major",
+      "n_stations": 797
+    },
+    {
+      "date": "2025-09-09",
+      "ratio": 1.479,
+      "ci_lo": 1.449,
+      "ci_hi": 1.509,
+      "severity": "major",
+      "n_stations": 798
+    },
+    {
+      "date": "2025-09-10",
+      "ratio": 1.453,
+      "ci_lo": 1.419,
+      "ci_hi": 1.487,
+      "severity": "major",
+      "n_stations": 795
+    },
+    {
+      "date": "2025-09-11",
+      "ratio": 1.664,
+      "ci_lo": 1.623,
+      "ci_hi": 1.702,
+      "severity": "major",
+      "n_stations": 793
+    }
+  ],
+  "placebo": {
+    "n_draws": 1000,
+    "observed": 1.423,
+    "null_median": 1.0,
+    "null_p975": 1.089,
+    "p_value_one_sided": "< 0.001",
+    "dow_matched": true
+  },
+  "sensitivity": {
+    "weather_thresholds": [
+      {
+        "wet_mm": 0.5,
+        "cold_c": 6.0,
+        "headline": 1.432,
+        "primary": false
+      },
+      {
+        "wet_mm": 0.5,
+        "cold_c": 8.0,
+        "headline": 1.4,
+        "primary": false
+      },
+      {
+        "wet_mm": 0.5,
+        "cold_c": 10.0,
+        "headline": 1.387,
+        "primary": false
+      },
+      {
+        "wet_mm": 1.0,
+        "cold_c": 6.0,
+        "headline": 1.455,
+        "primary": false
+      },
+      {
+        "wet_mm": 1.0,
+        "cold_c": 8.0,
+        "headline": 1.423,
+        "primary": true
+      },
+      {
+        "wet_mm": 1.0,
+        "cold_c": 10.0,
+        "headline": 1.404,
+        "primary": false
+      },
+      {
+        "wet_mm": 2.0,
+        "cold_c": 6.0,
+        "headline": 1.467,
+        "primary": false
+      },
+      {
+        "wet_mm": 2.0,
+        "cold_c": 8.0,
+        "headline": 1.44,
+        "primary": false
+      },
+      {
+        "wet_mm": 2.0,
+        "cold_c": 10.0,
+        "headline": 1.414,
+        "primary": false
+      }
+    ],
+    "min_expected_filter": [
+      {
+        "min_expected": 3.0,
+        "headline": 1.423
+      },
+      {
+        "min_expected": 5.0,
+        "headline": 1.423
+      },
+      {
+        "min_expected": 10.0,
+        "headline": 1.423
+      }
+    ],
+    "baseline_family": {
+      "stratified_median": 1.423,
+      "lightgbm_counterfactual": 1.298
+    }
+  }
+}
