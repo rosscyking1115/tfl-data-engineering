@@ -11,12 +11,20 @@ tfl_snowflake:
       database: TFL
       schema: silver
       threads: 4
-    # Durable, warehouse-free target for the analytics layer. Reads/writes the
-    # committed gold Parquet via DuckDB. Run dbt from the repo root so the
-    # relative Parquet paths resolve.
+    # Durable, warehouse-free target. Since the rigor-pass port (C3) this runs the FULL
+    # DAG — staging + marts from local silver Parquet, plus the analytics layer over the
+    # committed gold Parquet. Run dbt from the repo root so relative paths resolve.
+    # Local file db (gitignored) so big builds spill to disk and results are inspectable.
     duckdb:
       type: duckdb
-      path: ":memory:"
+      path: "dbt/tfl_local.duckdb"
       extensions:
         - parquet
-      threads: 4
+      threads: 2
+      settings:
+        # 41M-row fact build: cap memory well under free RAM (machine runs WSL2 etc, so
+        # ~8GB free is typical) and let DuckDB spill beside the file db. Do NOT set
+        # temp_directory here — dbt-duckdb re-applies settings per thread and DuckDB
+        # refuses to switch temp dirs once used; the file-backed default spill is fine.
+        memory_limit: "4GB"
+        preserve_insertion_order: false

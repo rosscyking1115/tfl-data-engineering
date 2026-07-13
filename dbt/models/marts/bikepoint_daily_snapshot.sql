@@ -3,7 +3,7 @@
 -- common names don't always match journey-file station names verbatim).
 
 with bikepoint as (
-    select * from {{ source('silver', 'BIKEPOINT_SNAPSHOT') }}
+    select * from {{ ref('stg_bikepoint_snapshot') }}
 ),
 
 stations as (
@@ -11,10 +11,10 @@ stations as (
 )
 
 select
-    to_number(to_char(b.snapshot_date, 'YYYYMMDD'))         as date_key,
+    {{ date_key_int('b.snapshot_date') }}                    as date_key,
     b.snapshot_date,
     b.bikepoint_id,
-    regexp_replace(trim(b.common_name), '\\s+', ' ')        as common_name,
+    {{ collapse_ws('b.common_name') }}                       as common_name,
     s.station_key,
     b.lat,
     b.lon,
@@ -30,4 +30,4 @@ select
     b.pulled_at
 from bikepoint b
 left join stations s
-    on regexp_replace(trim(b.common_name), '\\s+', ' ') = s.station_name
+    on {{ collapse_ws('b.common_name') }} = s.station_name
