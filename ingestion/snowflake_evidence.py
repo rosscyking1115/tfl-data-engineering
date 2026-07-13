@@ -10,12 +10,12 @@ Read-only. Run once while the trial is still active:
     .venv/Scripts/python ingestion/snowflake_evidence.py
 """
 
+import os
 from datetime import datetime, timezone
 from pathlib import Path
-import os
 
-from dotenv import load_dotenv
 import snowflake.connector
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")

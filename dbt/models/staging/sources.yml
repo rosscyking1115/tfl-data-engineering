@@ -4,14 +4,40 @@ sources:
   - name: silver
     database: TFL
     schema: SILVER
-    description: Spark-backfilled journey rows (see spark/backfill.py and ADR-0002)
+    description: >
+      Spark-backfilled journey rows plus daily API snapshots. On the snowflake target these
+      resolve to TFL.SILVER tables (the documented build phase); on the duckdb target the
+      external_location meta points each table at its durable Parquet, so the full DAG
+      rebuilds with no warehouse (rigor-pass C3).
     tables:
       - name: JOURNEYS
         description: >
           Unified journeys 2022→present across both schema eras. One row per hire;
           240 broken hires quarantined upstream. 312k rows have NULL end_station_code
           (a 2022 header variant) but retain end_station_name.
+        meta:
+          external_location: "read_parquet('data/silver/journeys/*/*/*.parquet', hive_partitioning = true)"
       - name: BIKEPOINT_SNAPSHOT
-        description: Daily dock-status snapshot from the TfL Unified API (ingestion/daily_api_ingest.py).
+        description: >
+          Daily dock-status snapshot from the TfL Unified API. Snowflake: ingestion/
+          daily_api_ingest.py (phase-3 era). DuckDB: the durable committed snapshot
+          (ingestion/live_snapshot.py), which lacks installed/locked.
+        meta:
+          external_location: "app/gold_export/live_bikepoint.parquet"
+        # Freshness tripwire (rigor-pass Area 4): a stale snapshot = a missed daily
+        # collection = a permanent hole in the forward event log. Run on the duckdb
+        # target (`dbt source freshness --target duckdb`).
+        loaded_at_field: "cast(pulled_at as timestamptz)"
+        freshness:
+          warn_after: { count: 26, period: hour }
+          error_after: { count: 50, period: hour }
       - name: LINE_STATUS_SNAPSHOT
-        description: Daily line-status snapshot (rail modes) from the TfL Unified API.
+        description: >
+          Daily line-status snapshot (rail modes). Snowflake: phase-3 loader table.
+          DuckDB: the durable committed snapshot (reason vs disruption_reason naming).
+        meta:
+          external_location: "app/gold_export/live_line_status.parquet"
+        loaded_at_field: "cast(pulled_at as timestamptz)"
+        freshness:
+          warn_after: { count: 26, period: hour }
+          error_after: { count: 50, period: hour }

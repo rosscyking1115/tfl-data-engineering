@@ -14,6 +14,9 @@ __pycache__/
 dbt/target/
 dbt/dbt_packages/
 dbt/logs/
+dbt/*.duckdb
+dbt/*.duckdb.tmp/
+dbt/.duckdb_tmp/
 logs/
 
 # MLflow local tracking (the model + feature-importance artifacts under ml/model/ ARE committed)

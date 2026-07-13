@@ -40,9 +40,9 @@ into a clean, tested analytical layer, then builds three things on top:
 - **A live, durable runtime** — a daily GitHub Actions job that refreshes line status and dock
   occupancy into committed Parquet, so the app keeps running with no warehouse and no server.
 
-The headline result: strike days drive **1.2×–2.6× normal cycling demand** — an effect this
-platform measures against a weather-adjusted baseline, so ordinary weather is never mistaken for
-the strike.
+The headline result: full-network strike days drive up to **~2.3× normal cycling demand**
+(median **1.42×** across 13 source-cited events) — measured against a weather-adjusted baseline,
+so ordinary weather is never mistaken for the strike.
 
 ## Highlights
 
@@ -53,8 +53,10 @@ the strike.
 - **The right tool for each job.** Spark for the multi-era backfill; plain Python for the
   kilobyte-sized daily API pulls. Both rationales are documented — see
   [the Spark ↔ Python boundary](#the-sparkpython-boundary).
-- **Disruption intelligence.** A weather-adjusted baseline isolates the strike effect: disruption
-  days run **1.33× median** cycling demand vs normal, with per-station drill-down.
+- **Disruption intelligence, with uncertainty.** A weather-adjusted baseline isolates the strike
+  effect: disruption days run **1.42× median** demand (**95% CI 1.24–1.61**, bootstrap over 13
+  source-cited events), **placebo-tested** (p < 0.001 vs random date sets) and robust across a
+  sensitivity battery ([ADR-0009](docs/adr/ADR-0009-analytical-contract.md)).
 - **A learned forecast, not just a median.** A LightGBM model predicts station-level daily demand
   and — by predicting with the disruption flag off — supplies a counterfactual "normal" baseline
   that's ~30% tighter than the median it replaces (**~21% lower error** on held-out 2026), tracked
@@ -66,8 +68,11 @@ the strike.
 - **Live & durable, for free.** A daily GitHub Actions job refreshes live line status + dock
   occupancy into committed Parquet; the app reads it via DuckDB with no warehouse — so it keeps
   running long after the Snowflake trial ends.
-- **Tested, dimensional model.** A dbt star schema (`fact_journey`, `dim_station`, `dim_date`) with
-  **53 data tests**, including cross-era station-identity conforming.
+- **Tested, dimensional model — portable across engines.** A dbt star schema with **63 data
+  tests** (schema, freshness tripwire, temporal coverage, reconciliation, a de-dup unit test)
+  plus **36 pytest** guards (idempotency, injected errors, an ML leakage guard). The full DAG
+  runs on both Snowflake (the documented build) and DuckDB — the rebuild **reconciles exactly**
+  ([ADR-0010](docs/adr/ADR-0010-migration-retrospective.md)).
 
 ## Screens
 
@@ -85,7 +90,7 @@ flowchart TD
     A[cycling.data.tfl.gov.uk<br/>bulk history · 482 files] -->|PySpark backfill| S[(Warehouse<br/>silver · 41.4M journeys)]
     API[TfL Unified API<br/>BikePoint + Line Status] -->|Python daily loader| S
     W[Open-Meteo<br/>weather] --> S
-    S --> D{dbt<br/>models + 53 tests}
+    S --> D{dbt<br/>models + 63 tests}
     D --> G[(Gold star schema<br/>+ demand-deviation)]
     G --> ML[LightGBM forecast<br/>MLflow · FastAPI]
     ML --> G
@@ -184,10 +189,13 @@ docs/        ADRs, architecture and engineering notes
 
 ## How it stays live
 
-A daily GitHub Actions job ([.github/workflows/daily.yml](.github/workflows/daily.yml)) ingests
-live line status and dock occupancy into committed Parquet; `dbt-duckdb` refreshes the
-weather-adjusted baseline and the demand-deviation tables; the Streamlit app reads it all via
-DuckDB. No warehouse, no server — it runs on free tiers indefinitely. A second scheduled job
+A daily GitHub Actions job ([.github/workflows/daily.yml](.github/workflows/daily.yml)) snapshots
+live line status and dock occupancy, ingests newly published journey CSVs
+([`journey_increment.py`](ingestion/journey_increment.py) — schema-gated, idempotent), rebuilds
+the analytics layer with **dbt tests gating delivery**, and appends a run-metadata audit row; a
+red run auto-opens a GitHub issue. The app's **Pipeline health** page shows coverage, freshness
+and the audit trail — gaps included. No warehouse, no server — it runs on free tiers
+indefinitely. A second scheduled job
 ([.github/workflows/keepalive.yml](.github/workflows/keepalive.yml)) pings the app every few hours
 so free-tier sleep rarely greets a visitor with a cold start — a pragmatic mitigation of the
 free tier, not a Streamlit limit.
@@ -204,7 +212,35 @@ free tier, not a Streamlit limit.
 - [ADR-0006](docs/adr/ADR-0006-pivot-to-live-disruption-workflow.md) — pivot to the live disruption workflow & the journey-lag honesty split
 - [ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md) — QA assistant: curated tool-calling over text-to-SQL, plus the public/BYOK design
 - [ADR-0008](docs/adr/ADR-0008-ml-demand-forecast.md) — learned demand baseline: LightGBM as a counterfactual, temporally validated
+- [ADR-0009](docs/adr/ADR-0009-analytical-contract.md) — the analytical contract: claim, design, assumptions, falsifiers, correction log
+- [ADR-0010](docs/adr/ADR-0010-migration-retrospective.md) — how the Snowflake→DuckDB migration actually happened
+- [Source contracts](docs/source_contracts.md) — what each upstream provides and how breakage surfaces
 - [Snowflake evidence](docs/snowflake_evidence.md) — warehouse-side facts (41.4M silver rows, gold sizes, ~1 credit cost) captured before the trial expired
+
+## Limitations (stated up front, on purpose)
+
+- **Associational, not causal.** The 1.42× effect is an observed association against a
+  weather-adjusted baseline with stated assumptions — strikes are announced, seasonal, and
+  weather-entangled, so causal identification is out of scope
+  ([ADR-0009](docs/adr/ADR-0009-analytical-contract.md)).
+- **Two data horizons.** Deep event history exists only for *strikes* (publicly documented,
+  source-cited); the API-derived log of all disruption types accumulates forward from
+  2026-07-08 only. Line-level proximity analysis activates once journey extracts cover that
+  window.
+- **Journey data lags ~1–2 months** (TfL bulk publishing) — live monitoring and historical
+  quantification are deliberately separate claims.
+- **Missed snapshot days are permanent.** The API keeps no history; 2026-07-11/12 were lost to
+  a since-fixed crash and are shown as holes on the Pipeline health page, not hidden.
+- **Increment approximation:** arrivals on extract-boundary dates can miss rides that started
+  in the previous file (departures — the demand measure — are exact).
+- **GitHub Actions cron is best-effort** and the free Streamlit tier sleeps; both are accepted,
+  documented trade-offs of the zero-cost runtime.
+
+## Attribution
+
+**Powered by TfL Open Data.** Contains OS data © Crown copyright and database rights 2016 and
+Geomni UK Map data © and database rights 2019. Weather by [Open-Meteo](https://open-meteo.com/)
+(CC-BY 4.0).
 
 ## Roadmap
 

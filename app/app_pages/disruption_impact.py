@@ -17,10 +17,12 @@ st.caption(
 
 # --- Headline: the whole story in two numbers -------------------------------------------
 head = da.disruption_headline()
+rigor = da.rigor_results()
 if not head.empty:
     ratios = {r["day_type"]: r for _, r in head.iterrows()}
     normal = ratios.get("Normal days")
     disr = ratios.get("Disruption days")
+    hl = rigor.get("headline", {})
     with st.container(horizontal=True):
         if normal is not None:
             st.metric(
@@ -29,15 +31,53 @@ if not head.empty:
             )
         if disr is not None:
             uplift = (disr["median_ratio"] - 1) * 100
+            ci = (f"95% CI {hl['ci95_lo']:.2f}–{hl['ci95_hi']:.2f}×"
+                  if hl else f"median across {int(disr['n_dates'])} disruption days")
             st.metric(
                 "A strike day", f"{disr['median_ratio']:.2f}× demand",
                 delta=f"{uplift:+.0f}% vs normal", border=True,
-                help=f"Median across {int(disr['n_dates'])} disruption days",
+                help=f"{ci} · cluster bootstrap over event days (ADR-0009)",
             )
+    cap = ("Read as a multiple of normal: **1.00× = exactly expected**, so 1.42× means 42% "
+           "more cycling than a comparable non-strike day.")
+    if hl:
+        cap += (f" The 95% confidence interval is **{hl['ci95_lo']:.2f}–{hl['ci95_hi']:.2f}×** "
+                f"(bootstrap over the {hl['n_events']} event days).")
+    st.caption(cap)
+
     st.caption(
-        "Read as a multiple of normal: **1.00× = exactly expected**, so 1.33× means a third "
-        "more cycling than a comparable non-strike day."
+        ":material/balance: **This is an observed association, not a causal claim** — strike "
+        "days are compared against a weather-adjusted normal with stated assumptions "
+        "([the analytical contract](https://github.com/rosscyking1115/tfl-data-engineering/blob/main/docs/adr/ADR-0009-analytical-contract.md))."
     )
+
+if rigor:
+    with st.expander("Robustness — placebo test and sensitivity battery", icon=":material/science:"):
+        pl = rigor.get("placebo", {})
+        if pl:
+            st.markdown(
+                f"**Placebo (negative control):** the same statistic on {pl['n_draws']:,} random "
+                f"sets of non-strike dates (day-of-week matched) has a null median of "
+                f"**{pl['null_median']}×** and a 97.5th percentile of **{pl['null_p975']}×** — "
+                f"the observed **{pl['observed']}×** sits far outside it "
+                f"(one-sided p {pl['p_value_one_sided']}). The method does not manufacture signal "
+                f"from ordinary days."
+            )
+        sens = rigor.get("sensitivity", {})
+        if sens.get("weather_thresholds"):
+            tbl = pd.DataFrame(sens["weather_thresholds"])
+            tbl = tbl.rename(columns={"wet_mm": "wet ≥ (mm)", "cold_c": "cold < (°C)",
+                                      "headline": "headline ×", "primary": "primary spec"})
+            st.markdown("**Sensitivity to the weather-bucket thresholds** (the baseline's one "
+                        "arbitrary choice) — the effect barely moves:")
+            st.dataframe(tbl, hide_index=True, width="content")
+        fam = sens.get("baseline_family", {})
+        if fam:
+            st.markdown(
+                f"**Baseline family:** stratified median **{fam['stratified_median']}×** vs "
+                f"LightGBM counterfactual **{fam['lightgbm_counterfactual']}×** — two "
+                f"independently-built baselines agree the effect is real."
+            )
 
 # --- Every strike day, ranked --------------------------------------------------------------
 st.subheader("Every strike day, ranked by how much cycling jumped")
@@ -59,10 +99,11 @@ bars = alt.Chart(dates).mark_bar().encode(
 rule = alt.Chart(dates).mark_rule(color=RED, strokeDash=[4, 4]).encode(x=alt.datum(1.0))
 st.altair_chart(bars + rule, width="stretch")
 st.caption(
-    "Blue = more cycling than normal; the dashed red line is a normal day. Warm-weather "
-    "strikes drive the biggest surges (up to ~2.3×), while the cold-January 2024 strikes sit "
-    "*below* the line — people didn't switch to bikes in the cold. The weather adjustment is "
-    "what makes that distinction honest."
+    "Blue = more cycling than normal; the dashed red line is a normal day. Every full network "
+    "strike lifts demand; the only near-baseline days are a stations-only partial action "
+    "(25 Nov 2022) and a residual knock-on day — severity, not weather, explains the spread. "
+    "Each event is source-cited in the repo; a citation audit removed two January 2024 dates "
+    "whose strike was called off."
 )
 
 # --- Where the demand landed ---------------------------------------------------------------

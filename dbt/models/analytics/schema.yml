@@ -1,5 +1,23 @@
 version: 2
 
+unit_tests:
+  - name: disruption_events_dedups_consecutive_days
+    description: >
+      Two consecutive qualifying days for a line collapse into ONE event (worst severity
+      kept); a gap starts a new event; good-service days (severity 10) are excluded.
+    model: disruption_events
+    given:
+      - input: ref('stg_line_status_snapshot')
+        rows:
+          - {snapshot_date: 2026-07-01, line_id: central, line_name: Central, mode: tube, status_severity: 6, status_description: "Severe Delays", disruption_reason: "signal failure"}
+          - {snapshot_date: 2026-07-02, line_id: central, line_name: Central, mode: tube, status_severity: 9, status_description: "Minor Delays", disruption_reason: "residual"}
+          - {snapshot_date: 2026-07-04, line_id: central, line_name: Central, mode: tube, status_severity: 5, status_description: "Part Closure", disruption_reason: "works"}
+          - {snapshot_date: 2026-07-01, line_id: victoria, line_name: Victoria, mode: tube, status_severity: 10, status_description: "Good Service", disruption_reason: null}
+    expect:
+      rows:
+        - {line_id: central, start_date: 2026-07-01, end_date: 2026-07-02, days_observed: 2, worst_severity: 6}
+        - {line_id: central, start_date: 2026-07-04, end_date: 2026-07-04, days_observed: 1, worst_severity: 5}
+
 models:
   - name: expected_demand
     description: Weather-adjusted expected daily departures per station × day-of-week × weather bucket.
@@ -22,6 +40,26 @@ models:
         tests:
           - not_null
           - dbt_utils.accepted_range: { min_value: 0, inclusive: true }
+
+  - name: disruption_events
+    description: >
+      De-duplicated disruption events from the daily line-status snapshot log (severity<10
+      qualifies; consecutive line-days collapse to one event). The forward-accumulating
+      complement to the citation-backed strike seed.
+    columns:
+      - name: line_id
+        tests: [not_null]
+      - name: start_date
+        tests: [not_null]
+      - name: end_date
+        tests: [not_null]
+      - name: worst_severity
+        tests:
+          - not_null
+          - dbt_utils.accepted_range: { min_value: 0, max_value: 9, inclusive: true }
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [line_id, start_date]
 
   - name: demand_deviation_ml
     description: Actual vs the LightGBM counterfactual baseline, per station per day, disruption-flagged.

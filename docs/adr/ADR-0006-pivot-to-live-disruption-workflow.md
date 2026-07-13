@@ -44,6 +44,11 @@ Chosen over pure demand forecasting (saturated) and dock-availability nowcasting
 - Evidence the premise holds: weather-adjusted, disruption days run **1.33× median** demand
   vs **1.00×** normal; warm-weather strikes hit 1.4–2.3×, cold-January strikes correctly stay
   ~0.8× — the weather control keeps it honest.
+  *(2026-07-13 correction, rigor-pass citation audit: the January 2024 "strikes" were in fact
+  called off on 7 Jan — per the RMT's own announcement — so those two dates were removed from
+  the seed. Across the 13 verified, source-cited events the headline is **1.42× median**, and
+  the near-baseline cases are explained by event severity (a stations-only partial action and a
+  knock-on day), not cold weather. The correction itself is the honesty mechanism working.)*
 - The ML **demand-forecasting** deep-dive remains a *separate future project* (breadth belongs
   across projects); this workflow uses a baseline, not a trained model.
 - A daily bot commit refreshes the live Parquet — authored as the repo owner to keep the

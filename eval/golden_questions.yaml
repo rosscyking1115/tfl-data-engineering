@@ -27,7 +27,7 @@
 
 - question: "Do tube strikes increase cycling demand? By how much?"
   expect_tool: disruption_impact
-  expect_contains: ["1.3"]   # ~1.33x median on disruption days
+  expect_contains: ["1.4"]   # ~1.42x median on disruption days (post citation audit)
 
 - question: "Which lines are disrupted right now?"
   expect_tool: live_status

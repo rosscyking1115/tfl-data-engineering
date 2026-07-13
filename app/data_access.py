@@ -190,6 +190,19 @@ def feature_importance() -> pd.DataFrame:
     return df
 
 
+# --- Statistical rigour results (analysis/rigor.py -> committed JSON) ---
+
+@st.cache_data(ttl="1h")
+def rigor_results() -> dict:
+    """Bootstrap CI, placebo and sensitivity battery for the headline (ADR-0009)."""
+    import json
+
+    path = EXPORT / "analysis_rigor.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 # --- Live layer (live_*.parquet, refreshed by the daily GitHub Action) ---
 
 @st.cache_data(ttl="15m")

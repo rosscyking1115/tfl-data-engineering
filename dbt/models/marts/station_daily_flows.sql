@@ -8,7 +8,7 @@ with departures as (
 ),
 
 arrivals as (
-    select to_number(to_char(to_date(end_ts), 'YYYYMMDD')) as date_key,
+    select {{ date_key_int('cast(end_ts as date)') }} as date_key,
            end_station_key as station_key,
            count(*) as arrivals
     from {{ ref('fact_journey') }}

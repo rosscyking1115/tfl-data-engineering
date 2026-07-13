@@ -14,7 +14,7 @@ select
     {{ dbt_utils.generate_surrogate_key(['j.era', 'j.rental_id']) }} as journey_key,
     j.era,
     j.rental_id,
-    to_number(to_char(j.start_date, 'YYYYMMDD')) as start_date_key,
+    {{ date_key_int('j.start_date') }}           as start_date_key,
     s_start.station_key                          as start_station_key,
     s_end.station_key                            as end_station_key,
     j.start_ts,

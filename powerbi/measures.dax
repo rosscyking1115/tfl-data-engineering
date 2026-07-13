@@ -39,7 +39,7 @@ Disruption Demand Ratio =
 MEDIANX (
     FILTER ( demand_deviation, demand_deviation[is_disruption] = TRUE () && demand_deviation[expected_departures] >= 5 ),
     demand_deviation[deviation_ratio]
-)   // reference (all dates): 1.329
+)   // reference (all dates): 1.423 (13 source-cited events, post citation-audit)
 
 Normal Demand Ratio =
 MEDIANX (
@@ -55,7 +55,7 @@ Disruption Uplift % = [Disruption Demand Ratio] - 1
 
 Forecast MAE (ML) =
 AVERAGEX ( FILTER ( demand_deviation_ml, NOT ISBLANK ( demand_deviation_ml[deviation] ) ), ABS ( demand_deviation_ml[deviation] ) )
-    // reference (all dates): ~5.66
+    // reference (all dates): ~5.65
 
 Median Baseline MAE =
 AVERAGEX ( FILTER ( demand_deviation, NOT ISBLANK ( demand_deviation[deviation] ) ), ABS ( demand_deviation[deviation] ) )

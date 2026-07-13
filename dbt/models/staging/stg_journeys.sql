@@ -9,9 +9,9 @@ select
     end_ts,
     duration_s,
     start_station_code,
-    regexp_replace(trim(start_station_name), '\\s+', ' ')  as start_station_name,
+    {{ collapse_ws('start_station_name') }}                 as start_station_name,
     end_station_code,
-    regexp_replace(trim(end_station_name), '\\s+', ' ')    as end_station_name,
-    to_date(start_ts)                                       as start_date,
+    {{ collapse_ws('end_station_name') }}                   as end_station_name,
+    cast(start_ts as date)                                  as start_date,
     source_file
 from {{ source('silver', 'JOURNEYS') }}
