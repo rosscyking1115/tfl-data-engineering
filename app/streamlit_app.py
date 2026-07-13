@@ -21,4 +21,5 @@ pages = [
     st.Page("app_pages/ask.py", title="Ask the data", icon=":material/chat:"),
     st.Page("app_pages/pipeline_health.py", title="Pipeline health", icon=":material/monitor_heart:"),
 ]
+st.sidebar.caption("Powered by TfL Open Data · weather by Open-Meteo")
 st.navigation(pages).run()
