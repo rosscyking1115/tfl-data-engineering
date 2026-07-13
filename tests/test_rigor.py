@@ -53,3 +53,21 @@ def test_placebo_detects_real_effect():
     out = rigor.placebo_null(df, np.random.default_rng(3), n_draws=100)
     p = out["p_value_one_sided"]
     assert (isinstance(p, str) and p.startswith("<")) or p < 0.05
+
+
+def test_haversine_known_distance():
+    # Hyde Park Corner (51.5027, -0.1527) -> Bank (51.5133, -0.0886): ~4.6 km
+    d = float(rigor.haversine_km(51.5027, -0.1527, 51.5133, -0.0886))
+    assert 4.0 < d < 5.2
+
+
+def test_stations_near_line_radius_rule():
+    geo = pd.DataFrame({
+        "station_key": ["near", "far"],
+        "lat": [51.5030, 51.6000],   # 'near' ~0.05km from the stop; 'far' ~11km away
+        "lon": [-0.1527, -0.1527],
+    })
+    stops = pd.DataFrame({"line_id": ["central"], "lat": [51.5027], "lon": [-0.1520]})
+    assert rigor.stations_near_line("central", 0.5, geo, stops) == {"near"}
+    assert rigor.stations_near_line("central", 15.0, geo, stops) == {"near", "far"}
+    assert rigor.stations_near_line("victoria", 0.5, geo, stops) == set()  # no stops -> empty

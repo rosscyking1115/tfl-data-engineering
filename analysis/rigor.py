@@ -207,6 +207,67 @@ def sensitivity_battery() -> dict:
     }
 
 
+# ------------------------------------------------------- spatial exposure (Area 6)
+
+def haversine_km(lat1, lon1, lat2, lon2):
+    """Great-circle distance in km (vectorized)."""
+    lat1, lon1, lat2, lon2 = map(np.radians, (np.asarray(lat1, float), np.asarray(lon1, float),
+                                              np.asarray(lat2, float), np.asarray(lon2, float)))
+    a = (np.sin((lat2 - lat1) / 2) ** 2
+         + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2) ** 2)
+    return 2 * 6371.0 * np.arcsin(np.sqrt(a))
+
+
+def stations_near_line(line_id: str, radius_km: float,
+                       geo: pd.DataFrame, stops: pd.DataFrame) -> set[str]:
+    """Docking stations within radius_km of ANY stop of the given line — the proximity
+    exposure rule (ADR-0009). Pure function; unit-tested on synthetic coordinates."""
+    line_stops = stops[stops["line_id"] == line_id]
+    g = geo.dropna(subset=["lat", "lon"])
+    if line_stops.empty or g.empty:
+        return set()
+    exposed = set()
+    slat, slon = line_stops["lat"].to_numpy(), line_stops["lon"].to_numpy()
+    for key, lat, lon in zip(g["station_key"], g["lat"], g["lon"]):
+        if haversine_km(lat, lon, slat, slon).min() <= radius_km:
+            exposed.add(key)
+    return exposed
+
+
+def spatial_section() -> dict:
+    """Proximity-exposure readiness. The line-level event study needs journey data that
+    OVERLAPS the snapshot-era events; until TfL publishes extracts covering the collection
+    window, we report the machinery's outputs (exposure sizes per radius) and an explicit
+    'awaiting overlap' status rather than a fabricated effect."""
+    geo_p, stops_p = EXPORT / "station_geo.parquet", EXPORT / "line_stops.parquet"
+    events_p = EXPORT / "disruption_events.parquet"
+    if not (geo_p.exists() and stops_p.exists() and events_p.exists()):
+        return {"status": "assets_missing"}
+    geo, stops = pd.read_parquet(geo_p), pd.read_parquet(stops_p)
+    events = pd.read_parquet(events_p)
+
+    daily = duckdb.sql(
+        f"select max(date_day) from read_parquet('{(EXPORT / 'daily_journey_stats.parquet').as_posix()}')"
+    ).fetchone()[0]
+    journeys_through = pd.Timestamp(daily).date()
+    first_event = pd.Timestamp(events["start_date"].min()).date()
+    overlap = journeys_through >= first_event
+
+    radii = {}
+    for r in (0.25, 0.5, 1.0):
+        per_line = {lid: len(stations_near_line(lid, r, geo, stops))
+                    for lid in sorted(events["line_id"].unique())}
+        radii[f"{r}km"] = per_line
+    return {
+        "status": "ready" if overlap else "awaiting_overlap",
+        "note": ("Line-level proximity event-study activates when journey extracts cover the "
+                 f"snapshot collection window (events since {first_event}; journeys through "
+                 f"{journeys_through})."),
+        "station_match_rate": round(float(geo["lat"].notna().mean()), 3),
+        "exposed_station_counts_by_radius": radii,
+    }
+
+
 # ------------------------------------------------------------------------ main
 
 def main() -> None:
@@ -233,6 +294,7 @@ def main() -> None:
         "per_event": events,
         "placebo": placebo,
         "sensitivity": sensitivity,
+        "spatial": spatial_section(),
     }
     OUT.write_text(json.dumps(result, indent=2), encoding="utf-8")
 

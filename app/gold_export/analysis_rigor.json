@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-13 19:37 UTC",
+  "generated_at": "2026-07-13 20:48 UTC",
   "seed": 42,
   "method": "cluster bootstrap over event days; dow-matched placebo; see ADR-0009",
   "headline": {
@@ -14,7 +14,7 @@
       "date": "2022-06-06",
       "ratio": 1.577,
       "ci_lo": 1.535,
-      "ci_hi": 1.618,
+      "ci_hi": 1.62,
       "severity": "major",
       "n_stations": 786
     },
@@ -22,7 +22,7 @@
       "date": "2022-06-07",
       "ratio": 1.653,
       "ci_lo": 1.618,
-      "ci_hi": 1.691,
+      "ci_hi": 1.69,
       "severity": "knock_on",
       "n_stations": 781
     },
@@ -30,22 +30,22 @@
       "date": "2022-06-21",
       "ratio": 2.085,
       "ci_lo": 2.021,
-      "ci_hi": 2.147,
+      "ci_hi": 2.152,
       "severity": "major",
       "n_stations": 788
     },
     {
       "date": "2022-08-19",
       "ratio": 2.336,
-      "ci_lo": 2.27,
-      "ci_hi": 2.4,
+      "ci_lo": 2.272,
+      "ci_hi": 2.401,
       "severity": "major",
       "n_stations": 791
     },
     {
       "date": "2022-11-10",
       "ratio": 1.417,
-      "ci_lo": 1.384,
+      "ci_lo": 1.383,
       "ci_hi": 1.451,
       "severity": "major",
       "n_stations": 792
@@ -53,8 +53,8 @@
     {
       "date": "2022-11-25",
       "ratio": 0.946,
-      "ci_lo": 0.928,
-      "ci_hi": 0.964,
+      "ci_lo": 0.927,
+      "ci_hi": 0.963,
       "severity": "partial",
       "n_stations": 790
     },
@@ -62,14 +62,14 @@
       "date": "2023-03-15",
       "ratio": 1.53,
       "ci_lo": 1.492,
-      "ci_hi": 1.569,
+      "ci_hi": 1.57,
       "severity": "major",
       "n_stations": 791
     },
     {
       "date": "2023-03-16",
       "ratio": 1.0,
-      "ci_lo": 0.974,
+      "ci_lo": 0.975,
       "ci_hi": 1.023,
       "severity": "knock_on",
       "n_stations": 794
@@ -85,23 +85,23 @@
     {
       "date": "2025-09-08",
       "ratio": 1.497,
-      "ci_lo": 1.465,
-      "ci_hi": 1.532,
+      "ci_lo": 1.467,
+      "ci_hi": 1.531,
       "severity": "major",
       "n_stations": 797
     },
     {
       "date": "2025-09-09",
       "ratio": 1.479,
-      "ci_lo": 1.449,
-      "ci_hi": 1.509,
+      "ci_lo": 1.451,
+      "ci_hi": 1.508,
       "severity": "major",
       "n_stations": 798
     },
     {
       "date": "2025-09-10",
       "ratio": 1.453,
-      "ci_lo": 1.419,
+      "ci_lo": 1.421,
       "ci_hi": 1.487,
       "severity": "major",
       "n_stations": 795
@@ -109,8 +109,8 @@
     {
       "date": "2025-09-11",
       "ratio": 1.664,
-      "ci_lo": 1.623,
-      "ci_hi": 1.702,
+      "ci_lo": 1.627,
+      "ci_hi": 1.703,
       "severity": "major",
       "n_stations": 793
     }
@@ -197,6 +197,49 @@
     "baseline_family": {
       "stratified_median": 1.423,
       "lightgbm_counterfactual": 1.298
+    }
+  },
+  "spatial": {
+    "status": "awaiting_overlap",
+    "note": "Line-level proximity event-study activates when journey extracts cover the snapshot collection window (events since 2026-07-08; journeys through 2026-06-01).",
+    "station_match_rate": 0.929,
+    "exposed_station_counts_by_radius": {
+      "0.25km": {
+        "central": 40,
+        "district": 67,
+        "hammersmith-city": 37,
+        "jubilee": 29,
+        "metropolitan": 21,
+        "mildmay": 11,
+        "piccadilly": 34,
+        "victoria": 24,
+        "weaver": 4,
+        "windrush": 15
+      },
+      "0.5km": {
+        "central": 117,
+        "district": 182,
+        "hammersmith-city": 138,
+        "jubilee": 72,
+        "metropolitan": 75,
+        "mildmay": 37,
+        "piccadilly": 102,
+        "victoria": 70,
+        "weaver": 26,
+        "windrush": 50
+      },
+      "1.0km": {
+        "central": 278,
+        "district": 397,
+        "hammersmith-city": 283,
+        "jubilee": 194,
+        "metropolitan": 167,
+        "mildmay": 118,
+        "piccadilly": 208,
+        "victoria": 163,
+        "weaver": 74,
+        "windrush": 115
+      }
     }
   }
 }
