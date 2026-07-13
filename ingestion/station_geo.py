@@ -17,8 +17,8 @@ TfL publishes journey data covering the collection period (ADR-0009).
 Run once (and re-run any time):  .venv/Scripts/python ingestion/station_geo.py
 """
 
-from pathlib import Path
 import re
+from pathlib import Path
 
 import duckdb
 import pandas as pd
