@@ -1,11 +1,12 @@
 """Pipeline health — the workflow watching itself (rigor-pass Area 5, ADR-0009 §honesty)."""
 
-from datetime import date
+from datetime import date, datetime, timezone
 
 import altair as alt
 import data_access as da
 import pandas as pd
 import streamlit as st
+from snapshot_coverage import calculate_snapshot_coverage
 
 COLLECTION_START = date(2026, 7, 8)  # forward disruption log began here (ADR-0009 two-horizon)
 
@@ -20,9 +21,14 @@ st.caption(
 # full (unfiltered) snapshot history for coverage — not just the latest day
 ls_all = pd.read_parquet(da.EXPORT / "live_line_status.parquet")
 collected = sorted(pd.to_datetime(ls_all["snapshot_date"]).dt.date.unique())
-expected = pd.date_range(COLLECTION_START, date.today()).date
-missing = sorted(set(expected) - set(collected))
-coverage = 1 - len(missing) / max(len(expected), 1)
+snapshot_status = calculate_snapshot_coverage(
+    collected,
+    start_date=COLLECTION_START,
+    now_utc=datetime.now(timezone.utc),
+)
+expected = snapshot_status.expected
+missing = snapshot_status.missing
+coverage = snapshot_status.coverage
 
 # journey side
 daily = da.daily_stats()
@@ -35,13 +41,21 @@ if p.exists():
 
 with st.container(horizontal=True):
     st.metric("Snapshot coverage", f"{coverage:.0%}", border=True,
-              help=f"{len(collected)}/{len(expected)} days since collection began {COLLECTION_START}")
+              help=(f"{snapshot_status.covered_days}/{len(expected)} due days since "
+                    f"collection began {COLLECTION_START}"))
     st.metric("Latest snapshot", str(max(collected)) if collected else "—", border=True)
     st.metric("Journey data through", str(j_max), border=True,
               help="TfL publishes journey extracts with a ~1–2 month lag (ADR-0006)")
     if rlog is not None and not rlog.empty:
         st.metric("Last gated run", str(rlog["run_ts"].iloc[-1])[:10], border=True,
                   help=f"dbt build: {rlog['dbt_build'].iloc[-1]}")
+
+if snapshot_status.pending is not None:
+    st.info(
+        f"**Today's snapshot ({snapshot_status.pending}) is pending.** The daily job is "
+        "scheduled for 06:17 UTC; today enters the coverage calculation after 06:30 UTC.",
+        icon=":material/schedule:",
+    )
 
 if missing:
     st.warning(
