@@ -1,8 +1,8 @@
 # ADR-0011: Add a bounded reliability-reference extension
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-16
-- **Gate 0 result:** NARROW; awaiting Ross acceptance
+- **Gate 0 result:** NARROW; accepted by Ross on 2026-07-16
 
 ## Context
 
@@ -14,9 +14,9 @@ Those observations are useful outside the app only if they are expressed as a sm
 contract with licence-safe fixtures, deterministic replay semantics, and an independent oracle.
 Raw excerpt publication and managed-platform proof remain unresolved.
 
-## Proposed decision
+## Decision
 
-If Ross accepts Gate 0, add `benchmark/gate0` as a bounded reliability-reference extension:
+Add `benchmark/gate0` as a bounded reliability-reference extension:
 
 - keep one public seam: `run_case(engine, case_definition)`;
 - separate `schema_family` from exact `header_variant_id`;
@@ -46,6 +46,7 @@ ADRs. ADR-0006's living-workflow and historical/live honesty boundary remain aut
 
 ## Follow-up gate
 
-T2 is blocked until Ross accepts the `NARROW` result. Acceptance authorizes adaptation of the
-portable reference only; it does not authorize archive downloads, raw publication, managed
-deployment, a release, or novelty claims.
+Ross accepted the `NARROW` result on 2026-07-16. T2 may begin after Gate 0 receives an independent
+Reviewer/QA pass and merges. Acceptance authorizes adaptation of the portable reference only; it
+does not authorize archive downloads, raw publication, managed deployment, a release, or novelty
+claims.

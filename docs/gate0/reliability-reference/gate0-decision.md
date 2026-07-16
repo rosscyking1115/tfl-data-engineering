@@ -6,8 +6,8 @@
 raw-source benchmark or managed proof.**
 
 This is the terminal T1 result. The evidence remains useful without Databricks, Streamlit, or the
-daily application workflow. T2 remains blocked until Ross accepts this decision and its narrower
-claim.
+daily application workflow. Ross accepted this decision and its narrower claim on 2026-07-16.
+T2 may proceed after this Gate 0 change receives an independent Reviewer/QA pass and merges.
 
 ## Baseline and cutoffs
 
@@ -87,8 +87,7 @@ attribution plus a non-endorsement statement. The repository MIT licence remains
 
 ## T2 handoff
 
-If Ross accepts `NARROW`, T2 may consume the accepted seam, schema mapping, constructed fixture
-policy, state invariants, expected outputs, and exclusions. T2 must keep raw excerpts blocked,
-re-run its own comparator/licence cutoffs, and treat managed validation as optional until an
-authorized validate-only profile exists. If Ross rejects this scope, close the extension with the
-evidence retained; do not invent a replacement contribution.
+Ross accepted `NARROW` on 2026-07-16. T2 may consume the accepted seam, schema mapping,
+constructed fixture policy, state invariants, expected outputs, and exclusions after Gate 0
+merges. T2 must keep raw excerpts blocked, re-run its own comparator/licence cutoffs, and treat
+managed validation as optional until an authorized validate-only profile exists.
