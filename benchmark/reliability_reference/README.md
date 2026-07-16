@@ -17,6 +17,7 @@ python -m benchmark.reliability_reference validate
 python -m benchmark.reliability_reference run --engine duckdb --scenario all --output <dir>
 python -m benchmark.reliability_reference run --engine spark --scenario all --output <dir>
 python -m benchmark.reliability_reference compare --duckdb <dir> --spark <dir> --output <dir>
+python -m benchmark.reliability_reference compare-managed --reference <duckdb-dir> --managed <delta-export-dir> --output <dir>
 ```
 
 Spark is pinned to an immutable Spark 4.0.1 image digest by `Makefile`, CI, and
@@ -53,6 +54,19 @@ not perform automatic garbage collection; deleting an old workspace is an explic
 - State hashes cover compact, sorted-key UTF-8 JSON with explicit nulls and canonical row order.
 - JSON under `expected/` is the human-readable oracle. Parquet is an interoperability artifact and
   is compared after decoding, never byte-for-byte.
+
+## Optional managed candidate
+
+`infra/databricks/reliability_reference/` contains a temporary, uniquely scoped Free Edition
+bundle candidate. It has no local `delta` CLI engine: an authenticated Databricks Spark session
+must call the unexported `run_managed_case` entry point. The bundle sync allowlist contains only
+contracts, expected JSON, constructed fixtures, scenarios, and managed code. Its cleanup job can
+drop only five validated table names; bundle destruction then removes the uniquely named schema,
+volume, and jobs.
+
+This lane does not supersede the portable oracle or the GitHub Actions/Parquet/DuckDB application
+runtime. Its current evidence state is documented under
+[`docs/reliability-reference/releases/0.3.0/`](../../docs/reliability-reference/releases/0.3.0/).
 
 See [replay semantics](../../docs/reliability-reference/replay-semantics.md),
 [fixture provenance](../../docs/reliability-reference/fixture-provenance.md), and

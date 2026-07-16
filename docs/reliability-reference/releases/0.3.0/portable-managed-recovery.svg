@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Portable-to-managed recovery flow</title>
+  <desc id="desc">Constructed fixtures pass through independent DuckDB, Spark, and optional Delta adapters into one reviewed semantic oracle, with atomic pointer publication and teardown.</desc>
+  <rect width="1200" height="520" fill="#07111f"/>
+  <text x="64" y="66" fill="#f4f7fb" font-family="system-ui, sans-serif" font-size="30" font-weight="700">Recovery proof: portable oracle first</text>
+  <text x="64" y="99" fill="#9fb1c7" font-family="system-ui, sans-serif" font-size="16">Constructed rows only · exact semantic comparison · no performance claim</text>
+  <g font-family="system-ui, sans-serif">
+    <rect x="64" y="160" width="220" height="108" rx="14" fill="#10243a" stroke="#39d0c3" stroke-width="2"/>
+    <text x="88" y="200" fill="#39d0c3" font-size="14" font-weight="700">INPUT</text>
+    <text x="88" y="232" fill="#f4f7fb" font-size="20">Constructed fixtures</text>
+    <text x="88" y="257" fill="#9fb1c7" font-size="14">5 exact header variants</text>
+    <path d="M284 214 H354" stroke="#60758d" stroke-width="3" marker-end="url(#arrow)"/>
+    <rect x="354" y="132" width="220" height="80" rx="14" fill="#10243a" stroke="#74a7ff" stroke-width="2"/>
+    <text x="378" y="166" fill="#74a7ff" font-size="14" font-weight="700">PORTABLE</text>
+    <text x="378" y="194" fill="#f4f7fb" font-size="19">DuckDB adapter</text>
+    <rect x="354" y="232" width="220" height="80" rx="14" fill="#10243a" stroke="#74a7ff" stroke-width="2"/>
+    <text x="378" y="266" fill="#74a7ff" font-size="14" font-weight="700">PORTABLE</text>
+    <text x="378" y="294" fill="#f4f7fb" font-size="19">Pinned Spark adapter</text>
+    <rect x="354" y="332" width="220" height="80" rx="14" fill="#10243a" stroke="#f6b94a" stroke-width="2" stroke-dasharray="8 6"/>
+    <text x="378" y="366" fill="#f6b94a" font-size="14" font-weight="700">OPTIONAL MANAGED</text>
+    <text x="378" y="394" fill="#f4f7fb" font-size="19">Delta adapter</text>
+    <path d="M574 172 H666 M574 272 H666 M574 372 H666" stroke="#60758d" stroke-width="3"/>
+    <path d="M666 172 V372 M666 272 H712" stroke="#60758d" stroke-width="3" marker-end="url(#arrow)"/>
+    <rect x="712" y="196" width="220" height="152" rx="14" fill="#10243a" stroke="#39d0c3" stroke-width="2"/>
+    <text x="738" y="233" fill="#39d0c3" font-size="14" font-weight="700">AUTHORITATIVE ORACLE</text>
+    <text x="738" y="267" fill="#f4f7fb" font-size="19">Rows · history · hash</text>
+    <text x="738" y="296" fill="#9fb1c7" font-size="14">Stage → validate → state</text>
+    <text x="738" y="319" fill="#9fb1c7" font-size="14">→ atomic pointer swap</text>
+    <path d="M932 272 H1000" stroke="#60758d" stroke-width="3" marker-end="url(#arrow)"/>
+    <rect x="1000" y="196" width="136" height="152" rx="14" fill="#10243a" stroke="#ef6b73" stroke-width="2"/>
+    <text x="1024" y="235" fill="#ef6b73" font-size="14" font-weight="700">GATE</text>
+    <text x="1024" y="269" fill="#f4f7fb" font-size="18">Export</text>
+    <text x="1024" y="296" fill="#f4f7fb" font-size="18">Redact</text>
+    <text x="1024" y="323" fill="#f4f7fb" font-size="18">Teardown</text>
+  </g>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#60758d"/></marker></defs>
+</svg>

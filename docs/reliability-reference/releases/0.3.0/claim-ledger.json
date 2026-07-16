@@ -1,0 +1,35 @@
+{
+  "candidate_version": "0.3.0",
+  "entries": [
+    {
+      "classification": "observed",
+      "claim": "Five exact ordered-header variants were verified across 148 locally retained files covering 2022 through May 2026.",
+      "publication": "permitted"
+    },
+    {
+      "classification": "observed",
+      "claim": "A partial-date source-object boundary motivated an ownership-boundary scenario.",
+      "publication": "permitted_with_fixture_disclaimer"
+    },
+    {
+      "classification": "constructed",
+      "claim": "All published benchmark rows and duplicate, correction, incompatible-replacement, malformed, and recovery cases are constructed.",
+      "publication": "required"
+    },
+    {
+      "classification": "derived",
+      "claim": "DuckDB and pinned Spark produce the same reviewed semantic outputs and terminal state hashes for the portable suite.",
+      "publication": "permitted"
+    },
+    {
+      "classification": "derived",
+      "claim": "A bounded serverless Delta execution matches the portable oracle and preserves pointer invariants.",
+      "publication": "permitted_only_after_managed_pass"
+    },
+    {
+      "classification": "prohibited",
+      "claim": "The suite proves real TfL correction incidents, complete archive coverage, production Databricks reliability, performance superiority, SLA behaviour, or novelty.",
+      "publication": "prohibited"
+    }
+  ]
+}

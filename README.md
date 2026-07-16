@@ -183,7 +183,7 @@ ml/          demand model — features, LightGBM training (MLflow), batch predic
 app/         Streamlit app (DuckDB over committed gold Parquet) + Ask assistant
 mcp/         read-only MCP server over the gold layer
 benchmark/   constructed reliability-reference fixtures and cross-engine conformance suite
-infra/       Airflow (Docker Compose), run scripts
+infra/       Airflow (Docker Compose), run scripts, bounded Databricks proof candidate
 tests/       pytest suite (feature-leakage guard, Quick answers, tool dispatch) — run in CI
 docs/        ADRs, architecture and engineering notes
 ```
@@ -203,6 +203,21 @@ free tier, not a Streamlit limit.
 
 ![Today's network — the live layer](docs/img/today.png)
 
+## Reliability reference
+
+The separate [portable reliability reference](benchmark/reliability_reference/README.md) uses
+constructed fixtures and a reviewed JSON oracle to prove replay, replacement, complete-object
+rejection, and interruption recovery across DuckDB and digest-pinned Spark. It does not import
+application state or alter the living workflow.
+
+T3 adds a bounded, temporary Databricks Delta proof candidate. The managed lane is currently
+**pending owner authentication**; no managed conformance claim is made unless its redacted report
+records `PASS` and verified teardown. DuckDB/Spark `0.2.0` remains the authoritative proven suite.
+
+[![Portable-to-managed recovery flow](docs/reliability-reference/releases/0.3.0/portable-managed-recovery.svg)](docs/reliability-reference/releases/0.3.0/README.md)
+
+[![Reliability-reference conformance matrix](docs/reliability-reference/releases/0.3.0/conformance-matrix.svg)](docs/reliability-reference/releases/0.3.0/README.md)
+
 ## Engineering notes
 
 - [ADR-0001](docs/adr/ADR-0001-dataset-and-stack.md) — dataset selection, with measured evidence
@@ -216,7 +231,7 @@ free tier, not a Streamlit limit.
 - [ADR-0009](docs/adr/ADR-0009-analytical-contract.md) — the analytical contract: claim, design, assumptions, falsifiers, correction log
 - [ADR-0010](docs/adr/ADR-0010-migration-retrospective.md) — how the Snowflake→DuckDB migration actually happened
 - [ADR-0011](docs/adr/ADR-0011-reliability-reference-extension.md) — licence-bounded reliability-reference extension
-- [Portable reliability reference](benchmark/reliability_reference/README.md) — recovery protocol, constructed fixtures, DuckDB/Spark conformance
+- [Portable reliability reference](benchmark/reliability_reference/README.md) — recovery protocol, constructed fixtures, DuckDB/Spark conformance, and the bounded managed candidate
 - [Source contracts](docs/source_contracts.md) — what each upstream provides and how breakage surfaces
 - [Snowflake evidence](docs/snowflake_evidence.md) — warehouse-side facts (41.4M silver rows, gold sizes, ~1 credit cost) captured before the trial expired
 

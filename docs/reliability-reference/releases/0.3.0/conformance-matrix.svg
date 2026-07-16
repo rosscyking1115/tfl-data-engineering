@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Reliability-reference conformance matrix</title>
+  <desc id="desc">DuckDB and pinned Spark pass the portable suite. Delta is pending owner authentication and cannot support a claim yet.</desc>
+  <rect width="1200" height="520" fill="#07111f"/>
+  <text x="64" y="66" fill="#f4f7fb" font-family="system-ui, sans-serif" font-size="30" font-weight="700">Conformance matrix</text>
+  <text x="64" y="99" fill="#9fb1c7" font-family="system-ui, sans-serif" font-size="16">Candidate state · managed evidence is not inferred from portable results</text>
+  <g font-family="system-ui, sans-serif">
+    <rect x="64" y="142" width="1072" height="60" rx="10" fill="#10243a"/>
+    <text x="90" y="180" fill="#9fb1c7" font-size="15" font-weight="700">LANE</text>
+    <text x="380" y="180" fill="#9fb1c7" font-size="15" font-weight="700">NORMALIZATION</text>
+    <text x="650" y="180" fill="#9fb1c7" font-size="15" font-weight="700">RECOVERY + HASH</text>
+    <text x="930" y="180" fill="#9fb1c7" font-size="15" font-weight="700">RESULT</text>
+    <rect x="64" y="216" width="1072" height="72" rx="10" fill="#0d1d30"/>
+    <text x="90" y="258" fill="#f4f7fb" font-size="19">DuckDB</text>
+    <text x="380" y="258" fill="#39d0c3" font-size="17">Independent SQL</text>
+    <text x="650" y="258" fill="#39d0c3" font-size="17">Exact oracle match</text>
+    <rect x="930" y="235" width="136" height="36" rx="18" fill="#123e3a"/>
+    <text x="966" y="259" fill="#57e0d2" font-size="15" font-weight="700">PASS</text>
+    <rect x="64" y="302" width="1072" height="72" rx="10" fill="#0d1d30"/>
+    <text x="90" y="344" fill="#f4f7fb" font-size="19">Spark 4.0.1</text>
+    <text x="380" y="344" fill="#39d0c3" font-size="17">Independent DataFrame</text>
+    <text x="650" y="344" fill="#39d0c3" font-size="17">Exact oracle match</text>
+    <rect x="930" y="321" width="136" height="36" rx="18" fill="#123e3a"/>
+    <text x="966" y="345" fill="#57e0d2" font-size="15" font-weight="700">PASS</text>
+    <rect x="64" y="388" width="1072" height="72" rx="10" fill="#0d1d30"/>
+    <text x="90" y="430" fill="#f4f7fb" font-size="19">Delta serverless</text>
+    <text x="380" y="430" fill="#f6b94a" font-size="17">Independent DataFrame</text>
+    <text x="650" y="430" fill="#9fb1c7" font-size="17">Not executed</text>
+    <rect x="930" y="407" width="136" height="36" rx="18" fill="#4a3512"/>
+    <text x="950" y="431" fill="#ffd27a" font-size="15" font-weight="700">PENDING</text>
+  </g>
+</svg>

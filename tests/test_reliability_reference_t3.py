@@ -1,4 +1,5 @@
 import json
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -20,9 +21,17 @@ from benchmark.reliability_reference.managed_evidence import (
     resource_names,
     validate_managed_evidence,
 )
+from scripts.build_reliability_release import (
+    T2_COMMIT,
+    ReleaseError,
+    build_release,
+    validate_managed_release_evidence,
+    validate_release_policy,
+)
 
 ROOT = Path(__file__).parents[1]
 SCENARIOS = ROOT / "benchmark" / "reliability_reference" / "scenarios"
+RELEASE_DOCS = ROOT / "docs" / "reliability-reference" / "releases" / "0.3.0"
 
 
 class MemoryManagedStore:
@@ -204,6 +213,83 @@ def test_managed_job_contains_no_application_or_live_snapshot_paths():
     assert "live_" not in rendered
     assert "MANAGED_SCENARIOS" in rendered
     assert "cleanup_statements" in rendered
+
+
+def test_release_policy_falls_back_to_exact_t2_commit_and_blocks_stop():
+    validate_release_policy("0.2.0", "NARROW", T2_COMMIT)
+    validate_release_policy("0.2.0", "FAIL", T2_COMMIT)
+
+    with pytest.raises(ReleaseError, match="T2 commit"):
+        validate_release_policy("0.2.0", "NARROW", "HEAD")
+    with pytest.raises(ReleaseError, match="managed PASS"):
+        validate_release_policy("0.3.0", "NARROW", "HEAD")
+    with pytest.raises(ReleaseError, match="STOP"):
+        validate_release_policy("0.2.0", "STOP", T2_COMMIT)
+
+
+def test_release_builder_emits_constructed_pack_sbom_and_checksums(tmp_path: Path):
+    outputs = build_release(ROOT, "HEAD", "0.3.0", "PASS", tmp_path)
+
+    archive = outputs["archive"]
+    with zipfile.ZipFile(archive) as pack:
+        names = pack.namelist()
+    assert "benchmark/reliability_reference/ATTRIBUTION.md" in names
+    assert any(name.startswith("benchmark/reliability_reference/fixtures/") for name in names)
+    assert not any(name.startswith("app/") or "/live_" in name for name in names)
+
+    sbom = json.loads(outputs["sbom"].read_text(encoding="utf-8"))
+    assert sbom["spdxVersion"] == "SPDX-2.3"
+    assert sbom["dataLicense"] == "CC0-1.0"
+    checksums = outputs["checksums"].read_text(encoding="utf-8")
+    assert archive.name in checksums
+    assert outputs["sbom"].name in checksums
+
+
+def test_managed_release_requires_pass_and_complete_teardown_absence():
+    valid = {
+        "result": "PASS",
+        "teardown": {
+            "required": True,
+            "verified": True,
+            "job_absent": True,
+            "schema_absent": True,
+            "volume_absent": True,
+            "tables_absent": True,
+            "bundle_artifacts_absent": True,
+        },
+    }
+    validate_managed_release_evidence(valid)
+
+    with pytest.raises(ReleaseError, match="resource absence"):
+        validate_managed_release_evidence(
+            {**valid, "teardown": {**valid["teardown"], "volume_absent": False}}
+        )
+
+
+def test_claim_ledger_separates_all_evidence_classes_and_forbidden_claims():
+    ledger = json.loads((RELEASE_DOCS / "claim-ledger.json").read_text(encoding="utf-8"))
+    classifications = {entry["classification"] for entry in ledger["entries"]}
+
+    assert classifications == {"observed", "constructed", "derived", "prohibited"}
+    prohibited = [entry for entry in ledger["entries"] if entry["classification"] == "prohibited"]
+    assert prohibited and all(entry["publication"] == "prohibited" for entry in prohibited)
+
+
+def test_pending_managed_template_and_visuals_are_identity_safe():
+    template = json.loads(
+        (RELEASE_DOCS / "managed-proof.template.json").read_text(encoding="utf-8")
+    )
+    assert template["result"] == "PENDING"
+    assert template["managed_attempts"] == 0
+    rendered = json.dumps(template)
+    assert "@" not in rendered
+    assert ".cloud.databricks.com" not in rendered
+    assert "dapi" not in rendered
+
+    for name in ("portable-managed-recovery.svg", "conformance-matrix.svg"):
+        svg = (RELEASE_DOCS / name).read_text(encoding="utf-8")
+        assert "<title" in svg and "<desc" in svg
+        assert "@" not in svg and ".cloud.databricks.com" not in svg
 
 
 @pytest.mark.parametrize(

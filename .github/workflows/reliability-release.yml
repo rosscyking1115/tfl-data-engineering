@@ -1,0 +1,60 @@
+name: reliability-reference-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version selected by the terminal managed decision.
+        required: true
+        type: choice
+        options: ["0.2.0", "0.3.0"]
+      managed_result:
+        description: Committed terminal managed decision.
+        required: true
+        type: choice
+        options: ["PASS", "NARROW", "FAIL", "STOP"]
+      target_commit:
+        description: Exact reviewed commit to tag.
+        required: true
+        type: string
+      owner_approval:
+        description: Type RELEASE only after independent review and Ross's approval.
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce manual owner gate
+        env:
+          OWNER_APPROVAL: ${{ inputs.owner_approval }}
+        run: test "$OWNER_APPROVAL" = "RELEASE"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Build policy-gated release assets
+        run: >-
+          python scripts/build_reliability_release.py
+          --version "${{ inputs.version }}"
+          --managed-result "${{ inputs.managed_result }}"
+          --target "${{ inputs.target_commit }}"
+          --output release-output
+      - name: Create repository release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "v${{ inputs.version }}"
+          release-output/reliability-reference-v${{ inputs.version }}.zip
+          release-output/reliability-reference-v${{ inputs.version }}.spdx.json
+          release-output/release-manifest.json
+          release-output/SHA256SUMS
+          --target "${{ inputs.target_commit }}"
+          --title "Reliability reference v${{ inputs.version }}"
+          --notes-file release-output/RELEASE_NOTES.md
