@@ -1,0 +1,20 @@
+[
+  {
+    "bike_id": "603",
+    "bike_model": "CLASSIC",
+    "duration_ms": 1200000,
+    "end_station_code": "001032",
+    "end_station_name": "Constructed End E",
+    "end_ts_local": "2025-07-01T10:20:00+01:00",
+    "header_variant_id": "sha256:acb72a406ae5c01d81b0ff13f11291117ad7609a8e491d84b0232951e9907636",
+    "ownership_end": "2025-07-01",
+    "ownership_start": "2025-07-01",
+    "rental_id": "2003",
+    "schema_family": "nextgen",
+    "source_object_id": "fixture/nextgen-station-names-first",
+    "source_timezone": "Europe/London",
+    "start_station_code": "001022",
+    "start_station_name": "Constructed Start E",
+    "start_ts_local": "2025-07-01T10:00:00+01:00"
+  }
+]

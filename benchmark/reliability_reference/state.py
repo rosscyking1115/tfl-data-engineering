@@ -3,10 +3,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any
-
-import pyarrow as pa
-import pyarrow.parquet as pq
+from typing import Any, Callable
 
 from .canonical import ordered_rows, state_hash
 from .constants import EMPTY_STATE_HASH
@@ -49,7 +46,11 @@ class StateStore:
         _write_json(stage / "candidate.json", payload)
         return stage
 
-    def prepare_state(self, payload: dict[str, Any]) -> str:
+    def prepare_state(
+        self,
+        payload: dict[str, Any],
+        parquet_writer: Callable[[list[dict[str, Any]], Path], None],
+    ) -> str:
         rows = ordered_rows(payload["canonical_rows"])
         digest = state_hash(rows)
         version = f"v-{digest.removeprefix('sha256:')[:16]}"
@@ -57,10 +58,7 @@ class StateStore:
         destination.mkdir(parents=True, exist_ok=True)
         manifest = {**payload, "state_version": version, "state_hash": digest, "canonical_rows": rows}
         _write_json(destination / "canonical.json", rows)
-        if rows:
-            pq.write_table(pa.Table.from_pylist(rows), destination / "canonical.parquet")
-        else:
-            pq.write_table(pa.table({}), destination / "canonical.parquet")
+        parquet_writer(rows, destination / "canonical.parquet")
         _write_json(destination / "state.json", manifest)
         return version
 

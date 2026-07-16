@@ -13,7 +13,6 @@ from .contracts import (
     load_sidecar,
     validate_workspace,
 )
-from .duckdb_adapter import normalize_object as normalize_duckdb
 from .models import RunResult
 from .state import StateStore
 
@@ -74,6 +73,10 @@ def run_case(
     history: list[dict[str, Any]] = []
     reconciliation: list[dict[str, Any]] = []
     run_id = f"run-{uuid.uuid4().hex}"
+    if engine == "duckdb":
+        from .duckdb_adapter import normalize_object, write_parquet
+    else:
+        from .spark_adapter import normalize_object, write_parquet
 
     for operation in case["operations"]:
         metadata, fixture = load_sidecar(operation["object_ref"])
@@ -100,12 +103,7 @@ def run_case(
             continue
 
         try:
-            if engine == "duckdb":
-                rows = normalize_duckdb(fixture, metadata)
-            else:
-                from .spark_adapter import normalize_object as normalize_spark
-
-                rows = normalize_spark(fixture, metadata)
+            rows = normalize_object(fixture, metadata)
             supersedes = metadata["supersedes_object_id"]
             if supersedes:
                 previous = state["active_objects"].get(supersedes)
@@ -171,7 +169,7 @@ def run_case(
                 {"case_id": case["case_id"], "status": "interrupted", "fault_at": fault_at},
             )
             return _result(case["case_id"], engine, "interrupted", state, history, reconciliation, manifest, workspace)
-        version = store.prepare_state(candidate)
+        version = store.prepare_state(candidate, write_parquet)
         if inject and fault_at == "before_pointer_swap":
             manifest = store.record_run(
                 run_id,

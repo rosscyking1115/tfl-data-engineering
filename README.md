@@ -182,6 +182,7 @@ dbt/         staging + marts models, tests, seeds
 ml/          demand model — features, LightGBM training (MLflow), batch predict, FastAPI serving
 app/         Streamlit app (DuckDB over committed gold Parquet) + Ask assistant
 mcp/         read-only MCP server over the gold layer
+benchmark/   constructed reliability-reference fixtures and cross-engine conformance suite
 infra/       Airflow (Docker Compose), run scripts
 tests/       pytest suite (feature-leakage guard, Quick answers, tool dispatch) — run in CI
 docs/        ADRs, architecture and engineering notes
@@ -214,6 +215,8 @@ free tier, not a Streamlit limit.
 - [ADR-0008](docs/adr/ADR-0008-ml-demand-forecast.md) — learned demand baseline: LightGBM as a counterfactual, temporally validated
 - [ADR-0009](docs/adr/ADR-0009-analytical-contract.md) — the analytical contract: claim, design, assumptions, falsifiers, correction log
 - [ADR-0010](docs/adr/ADR-0010-migration-retrospective.md) — how the Snowflake→DuckDB migration actually happened
+- [ADR-0011](docs/adr/ADR-0011-reliability-reference-extension.md) — licence-bounded reliability-reference extension
+- [Portable reliability reference](benchmark/reliability_reference/README.md) — recovery protocol, constructed fixtures, DuckDB/Spark conformance
 - [Source contracts](docs/source_contracts.md) — what each upstream provides and how breakage surfaces
 - [Snowflake evidence](docs/snowflake_evidence.md) — warehouse-side facts (41.4M silver rows, gold sizes, ~1 credit cost) captured before the trial expired
 

@@ -6,6 +6,7 @@ import pytest
 from benchmark.reliability_reference import CONTRACT_VERSION, VERSION, RunResult, run_case
 from benchmark.reliability_reference.compare import compare_results
 from benchmark.reliability_reference.contracts import ContractError, validate_fixture_pack
+from benchmark.reliability_reference.oracle import assert_expected
 
 ROOT = Path(__file__).parents[1]
 REFERENCE = ROOT / "benchmark" / "reliability_reference"
@@ -22,8 +23,9 @@ def test_candidate_version_and_fixture_pack_are_frozen_from_gate0():
     assert VERSION == "0.2.0"
     assert CONTRACT_VERSION == "1"
     assert report["fixture_count"] == 8
+    assert report["total_fixture_count"] == 14
     assert report["gate0_byte_matches"] == 8
-    assert report["publication_decisions"] == {"publish_constructed": 8}
+    assert report["publication_decisions"] == {"publish_constructed": 14}
 
 
 def test_duckdb_normalizes_all_five_verified_header_variants(tmp_path: Path):
@@ -169,3 +171,23 @@ def test_run_result_is_json_serializable(tmp_path: Path):
 
     assert '"benchmark_version": "0.2.0"' in rendered
     assert all(not Path(path).is_absolute() for path in result.artifacts.values())
+
+
+@pytest.mark.parametrize(
+    "scenario_name",
+    [
+        "001_initial_variants",
+        "002_duplicate_replay",
+        "003_new_period",
+        "004_corrected_period",
+        "005_late_arrival",
+        "006_header_compatibility",
+        "007_invalid_objects",
+        "008_interrupted_publish",
+        "009_full_rebuild",
+    ],
+)
+def test_duckdb_matches_human_reviewed_oracle(tmp_path: Path, scenario_name: str):
+    result = run_case("duckdb", scenario(scenario_name), workspace=tmp_path)
+
+    assert_expected(result.to_dict(), scenario_name)

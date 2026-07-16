@@ -1,23 +1,55 @@
-"""DuckDB-native CSV normalization adapter."""
+"""Spark-native CSV normalization adapter."""
 
 from datetime import date
 from pathlib import Path
 from typing import Any
 
-import duckdb
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 from .canonical import normalized_text, parse_source_time, required_text
 from .contracts import ObjectValidationError, find_variant, read_headers, schema_map
 
+CANONICAL_SCHEMA = StructType(
+    [
+        StructField("schema_family", StringType(), False),
+        StructField("header_variant_id", StringType(), False),
+        StructField("rental_id", StringType(), False),
+        StructField("bike_id", StringType(), False),
+        StructField("bike_model", StringType(), True),
+        StructField("start_ts_local", StringType(), False),
+        StructField("end_ts_local", StringType(), False),
+        StructField("source_timezone", StringType(), False),
+        StructField("duration_ms", LongType(), False),
+        StructField("start_station_code", StringType(), True),
+        StructField("start_station_name", StringType(), True),
+        StructField("end_station_code", StringType(), True),
+        StructField("end_station_name", StringType(), True),
+        StructField("source_object_id", StringType(), False),
+        StructField("ownership_start", StringType(), False),
+        StructField("ownership_end", StringType(), False),
+    ]
+)
 
-def _quoted(identifier: str) -> str:
-    return '"' + identifier.replace('"', '""') + '"'
+
+def _session() -> SparkSession:
+    session = (
+        SparkSession.builder.master("local[2]")
+        .appName("tfl-reliability-reference")
+        .config("spark.sql.session.timeZone", "Europe/London")
+        .config("spark.sql.shuffle.partitions", "2")
+        .getOrCreate()
+    )
+    session.sparkContext.setLogLevel("ERROR")
+    return session
 
 
-def _text_expression(source: str | None, target: str) -> str:
+def _text_column(source: str | None, target: str):
     if source is None:
-        return f"NULL::VARCHAR AS {_quoted(target)}"
-    return f"NULLIF(trim(CAST({_quoted(source)} AS VARCHAR)), '') AS {_quoted(target)}"
+        return F.lit(None).cast("string").alias(target)
+    value = F.trim(F.col(source).cast("string"))
+    return F.when(F.length(value) == 0, F.lit(None)).otherwise(value).alias(target)
 
 
 def normalize_object(fixture: Path, metadata: dict[str, Any]) -> list[dict[str, Any]]:
@@ -31,30 +63,31 @@ def normalize_object(fixture: Path, metadata: dict[str, Any]) -> list[dict[str, 
         source = mapping[field]
         return source if source in headers else None
 
-    expressions = [
-        _text_expression(present("rental_id"), "rental_id"),
-        _text_expression(present("bike_id"), "bike_id"),
-        _text_expression(present("bike_model"), "bike_model"),
-        _text_expression(present("start_ts"), "start_ts_source"),
-        _text_expression(present("end_ts"), "end_ts_source"),
-        _text_expression(present("duration"), "duration_source"),
-        _text_expression(present("start_station_code"), "start_station_code"),
-        _text_expression(present("start_station_name"), "start_station_name"),
-        _text_expression(present("end_station_code"), "end_station_code"),
-        _text_expression(present("end_station_name"), "end_station_name"),
-    ]
-    connection = duckdb.connect(":memory:")
+    spark = _session()
+    schema = StructType([StructField(header, StringType(), True) for header in headers])
     try:
-        relation = connection.execute(
-            f"SELECT {', '.join(expressions)} FROM read_csv(?, header=true, all_varchar=true)",
-            [str(fixture)],
+        frame = (
+            spark.read.option("header", True)
+            .option("mode", "FAILFAST")
+            .option("enforceSchema", False)
+            .schema(schema)
+            .csv(str(fixture))
+            .select(
+                _text_column(present("rental_id"), "rental_id"),
+                _text_column(present("bike_id"), "bike_id"),
+                _text_column(present("bike_model"), "bike_model"),
+                _text_column(present("start_ts"), "start_ts_source"),
+                _text_column(present("end_ts"), "end_ts_source"),
+                _text_column(present("duration"), "duration_source"),
+                _text_column(present("start_station_code"), "start_station_code"),
+                _text_column(present("start_station_name"), "start_station_name"),
+                _text_column(present("end_station_code"), "end_station_code"),
+                _text_column(present("end_station_name"), "end_station_name"),
+            )
         )
-        columns = [item[0] for item in relation.description]
-        records = [dict(zip(columns, values, strict=True)) for values in relation.fetchall()]
-    except duckdb.Error as error:
+        records = [row.asDict(recursive=False) for row in frame.collect()]
+    except Exception as error:
         raise ObjectValidationError("malformed_csv", str(error)) from error
-    finally:
-        connection.close()
     if len(records) != metadata["expected_source_rows"]:
         raise ObjectValidationError(
             "source_row_count_mismatch",
@@ -117,15 +150,7 @@ def normalize_object(fixture: Path, metadata: dict[str, Any]) -> list[dict[str, 
 
 
 def write_parquet(rows: list[dict[str, Any]], destination: Path) -> None:
-    """Materialize semantic rows without introducing a PyArrow dependency."""
-    source = destination.with_name("canonical.json")
-    connection = duckdb.connect(":memory:")
-    try:
-        escaped_source = str(source).replace("'", "''")
-        escaped_destination = str(destination).replace("'", "''")
-        connection.execute(
-            f"COPY (SELECT * FROM read_json_auto('{escaped_source}')) "
-            f"TO '{escaped_destination}' (FORMAT PARQUET)"
-        )
-    finally:
-        connection.close()
+    spark = _session()
+    spark.createDataFrame(rows, schema=CANONICAL_SCHEMA).coalesce(1).write.mode(
+        "overwrite"
+    ).parquet(str(destination))

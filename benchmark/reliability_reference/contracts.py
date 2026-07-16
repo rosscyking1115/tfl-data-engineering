@@ -118,6 +118,7 @@ def validate_fixture_pack() -> dict[str, Any]:
     decisions = Counter()
     for sidecar_path in sorted(FIXTURE_ROOT.glob("*.sidecar.json")):
         metadata, fixture = load_sidecar(sidecar_path.name)
+        decisions[metadata["publication_decision"]] += 1
         origin_name = metadata.get("origin_gate0_file")
         if origin_name:
             origin = GATE0_FIXTURE_ROOT / origin_name
@@ -126,7 +127,6 @@ def validate_fixture_pack() -> dict[str, Any]:
             if metadata.get("origin_gate0_sha256") != file_sha256(origin):
                 raise ContractError(f"{fixture.name}: frozen Gate 0 digest differs")
             migrated.append(fixture.name)
-            decisions[metadata["publication_decision"]] += 1
     return {
         "fixture_count": len(migrated),
         "total_fixture_count": len(list(FIXTURE_ROOT.glob("*.sidecar.json"))),

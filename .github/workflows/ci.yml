@@ -31,7 +31,71 @@ jobs:
           pip install holidays pytest ruff
 
       - name: Lint (ruff)
-        run: ruff check app ml tests ingestion
+        run: ruff check app ml tests ingestion analysis benchmark
 
       - name: Tests (pytest)
         run: pytest
+
+  benchmark-duckdb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install portable benchmark dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install duckdb pyarrow
+      - name: Validate fixture pack
+        run: python -m benchmark.reliability_reference validate
+      - name: Run DuckDB conformance
+        run: python -m benchmark.reliability_reference run --engine duckdb --scenario all --output benchmark-output/duckdb
+      - name: Upload DuckDB report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliability-reference-duckdb
+          path: benchmark-output/duckdb
+
+  benchmark-spark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run digest-pinned Spark conformance
+        run: |
+          mkdir -p benchmark-output/spark
+          docker run --rm \
+            -v "$PWD:/repo:ro" \
+            -v "$PWD/benchmark-output/spark:/out" \
+            apache/spark:4.0.1-java21-python3@sha256:fb5c5e61e7bb1be94b7f3a31afe1f73c5b4d20b6008f4ffa7278fc085da08a9e \
+            /opt/spark/bin/spark-submit /repo/tests/spark_reference_check.py /out
+      - name: Upload Spark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliability-reference-spark
+          path: benchmark-output/spark
+
+  benchmark-compare:
+    needs: [benchmark-duckdb, benchmark-spark]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: reliability-reference-duckdb
+          path: benchmark-output/duckdb
+      - uses: actions/download-artifact@v4
+        with:
+          name: reliability-reference-spark
+          path: benchmark-output/spark
+      - name: Compare decoded semantics
+        run: python -m benchmark.reliability_reference compare --duckdb benchmark-output/duckdb --spark benchmark-output/spark --output benchmark-output/comparison
+      - name: Upload parity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliability-reference-parity
+          path: benchmark-output/comparison

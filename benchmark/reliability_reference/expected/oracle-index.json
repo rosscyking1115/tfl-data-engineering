@@ -1,0 +1,88 @@
+{
+  "benchmark_version": "0.2.0",
+  "contract_version": "1",
+  "review_status": "candidate_for_independent_review",
+  "scenarios": {
+    "001_initial_variants": {
+      "state_ref": "states/initial-variants.json",
+      "state_hash": "sha256:1a5aeed560b73e356ffd7d30dbaf6937ff3fdbb523e4343a65f009a27910b457",
+      "events": [
+        ["fixture/classic-standard", "accepted", ""],
+        ["fixture/classic-missing-end-station-id", "accepted", ""],
+        ["fixture/nextgen-standard", "accepted", ""],
+        ["fixture/nextgen-station-names-first", "accepted", ""],
+        ["fixture/nextgen-interleaved", "accepted", ""]
+      ]
+    },
+    "002_duplicate_replay": {
+      "state_ref": "states/nextgen-standard.json",
+      "state_hash": "sha256:2c798f95640ad9f0efcbd87112922c6cc60c509069dd1224f26a5a7990a2f3bf",
+      "events": [
+        ["fixture/nextgen-standard", "accepted", ""],
+        ["fixture/nextgen-standard", "duplicate", "exact_content_replay"]
+      ]
+    },
+    "003_new_period": {
+      "state_ref": "states/standard-plus-new.json",
+      "state_hash": "sha256:4e6797a4d0c30042f835be14ee8e766a248e4e184103d044c44d1b30a1d06106",
+      "events": [
+        ["fixture/nextgen-standard", "accepted", ""],
+        ["fixture/nextgen-new-period", "accepted", ""]
+      ]
+    },
+    "004_corrected_period": {
+      "state_ref": "states/corrected-period.json",
+      "state_hash": "sha256:7ce69cf49f9c622f62e6c09dd62663d2ad831a4bf34badd42981ae572c673225",
+      "events": [
+        ["fixture/nextgen-standard", "accepted", ""],
+        ["fixture/nextgen-correction", "replaced", ""]
+      ]
+    },
+    "005_late_arrival": {
+      "state_ref": "states/standard-plus-new.json",
+      "state_hash": "sha256:4e6797a4d0c30042f835be14ee8e766a248e4e184103d044c44d1b30a1d06106",
+      "events": [
+        ["fixture/nextgen-new-period", "accepted", ""],
+        ["fixture/nextgen-standard", "accepted", ""]
+      ]
+    },
+    "006_header_compatibility": {
+      "state_ref": "states/names-first.json",
+      "state_hash": "sha256:4c0612b855c2895fabf098ef15e73a5f73545116bea7e59d4b07b25abb4f6a39",
+      "events": [
+        ["fixture/nextgen-station-names-first", "accepted", ""],
+        ["fixture/nextgen-unknown-extra", "rejected", "unknown_header"],
+        ["fixture/nextgen-missing-header", "rejected", "missing_header"]
+      ]
+    },
+    "007_invalid_objects": {
+      "state_ref": "states/nextgen-standard.json",
+      "state_hash": "sha256:2c798f95640ad9f0efcbd87112922c6cc60c509069dd1224f26a5a7990a2f3bf",
+      "events": [
+        ["fixture/nextgen-standard", "accepted", ""],
+        ["fixture/nextgen-unknown-extra", "rejected", "unknown_header"],
+        ["fixture/nextgen-missing-header", "rejected", "missing_header"],
+        ["fixture/nextgen-invalid-duration", "rejected", "invalid_duration"],
+        ["fixture/nextgen-truncated", "rejected", "source_row_count_mismatch"],
+        ["fixture/nextgen-out-of-period", "rejected", "outside_ownership_period"],
+        ["fixture/nextgen-dst-ambiguous", "rejected", "ambiguous_source_time"]
+      ]
+    },
+    "008_interrupted_publish": {
+      "state_ref": "states/standard-plus-new.json",
+      "state_hash": "sha256:4e6797a4d0c30042f835be14ee8e766a248e4e184103d044c44d1b30a1d06106",
+      "events": [
+        ["fixture/nextgen-standard", "accepted", ""],
+        ["fixture/nextgen-new-period", "accepted", ""]
+      ]
+    },
+    "009_full_rebuild": {
+      "state_ref": "states/standard-plus-new.json",
+      "state_hash": "sha256:4e6797a4d0c30042f835be14ee8e766a248e4e184103d044c44d1b30a1d06106",
+      "events": [
+        ["fixture/nextgen-standard", "accepted", ""],
+        ["fixture/nextgen-new-period", "accepted", ""]
+      ]
+    }
+  }
+}
