@@ -1,15 +1,23 @@
-"""Spark-native CSV normalization adapter."""
+"""Spark-native typed CSV normalization adapter."""
 
-from datetime import date
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import LongType, StringType, StructField, StructType
+from pyspark.sql.window import Window
 
-from .canonical import normalized_text, parse_source_time, required_text
 from .contracts import ObjectValidationError, find_variant, read_headers, schema_map
+
+LONDON = ZoneInfo("Europe/London")
+SPARK_TIMESTAMP_FORMATS = {
+    "%d/%m/%Y %H:%M": "dd/MM/yyyy HH:mm",
+    "%Y-%m-%d %H:%M": "yyyy-MM-dd HH:mm",
+    "%Y-%m-%d %H:%M:%S": "yyyy-MM-dd HH:mm:ss",
+}
 
 CANONICAL_SCHEMA = StructType(
     [
@@ -48,8 +56,41 @@ def _session() -> SparkSession:
 def _text_column(source: str | None, target: str):
     if source is None:
         return F.lit(None).cast("string").alias(target)
-    value = F.trim(F.col(source).cast("string"))
+    value = F.regexp_replace(F.trim(F.col(source).cast("string")), r"\s+", " ")
     return F.when(F.length(value) == 0, F.lit(None)).otherwise(value).alias(target)
+
+
+def _parsed_timestamp(source: str, formats: list[str], target: str):
+    attempts = [F.to_timestamp(F.col(source), SPARK_TIMESTAMP_FORMATS[item]) for item in formats]
+    return F.coalesce(*attempts).alias(target)
+
+
+def _aware_iso(value: str, formats: list[str], field: str) -> str:
+    parsed = None
+    for format_string in formats:
+        try:
+            parsed = datetime.strptime(value, format_string)
+            break
+        except ValueError:
+            continue
+    if parsed is None:
+        raise ObjectValidationError("invalid_timestamp", f"unsupported {field}: {value!r}")
+    candidates = []
+    for fold in (0, 1):
+        aware = parsed.replace(tzinfo=LONDON, fold=fold)
+        round_trip = aware.astimezone(timezone.utc).astimezone(LONDON).replace(tzinfo=None)
+        if round_trip == parsed:
+            candidates.append(aware)
+    offsets = {candidate.utcoffset() for candidate in candidates}
+    if not candidates:
+        raise ObjectValidationError(
+            "nonexistent_source_time", f"nonexistent Europe/London {field}: {value!r}"
+        )
+    if len(offsets) > 1:
+        raise ObjectValidationError(
+            "ambiguous_source_time", f"ambiguous Europe/London {field}: {value!r}"
+        )
+    return candidates[0].isoformat()
 
 
 def normalize_object(fixture: Path, metadata: dict[str, Any]) -> list[dict[str, Any]]:
@@ -63,8 +104,18 @@ def normalize_object(fixture: Path, metadata: dict[str, Any]) -> list[dict[str, 
         source = mapping[field]
         return source if source in headers else None
 
+    duration_source = present("duration")
+    schema = StructType(
+        [
+            StructField(
+                header,
+                LongType() if header == duration_source else StringType(),
+                True,
+            )
+            for header in headers
+        ]
+    )
     spark = _session()
-    schema = StructType([StructField(header, StringType(), True) for header in headers])
     try:
         frame = (
             spark.read.option("header", True)
@@ -76,77 +127,91 @@ def normalize_object(fixture: Path, metadata: dict[str, Any]) -> list[dict[str, 
                 _text_column(present("rental_id"), "rental_id"),
                 _text_column(present("bike_id"), "bike_id"),
                 _text_column(present("bike_model"), "bike_model"),
-                _text_column(present("start_ts"), "start_ts_source"),
-                _text_column(present("end_ts"), "end_ts_source"),
-                _text_column(present("duration"), "duration_source"),
                 _text_column(present("start_station_code"), "start_station_code"),
                 _text_column(present("start_station_name"), "start_station_name"),
                 _text_column(present("end_station_code"), "end_station_code"),
                 _text_column(present("end_station_name"), "end_station_name"),
+                _text_column(present("start_ts"), "start_ts_source"),
+                _text_column(present("end_ts"), "end_ts_source"),
+                _parsed_timestamp(present("start_ts"), mapping["timestamp_formats"], "start_ts_naive"),
+                _parsed_timestamp(present("end_ts"), mapping["timestamp_formats"], "end_ts_naive"),
+                (F.col(duration_source) * F.lit(mapping["duration_multiplier"]))
+                .cast("long")
+                .alias("duration_ms"),
             )
         )
-        records = [row.asDict(recursive=False) for row in frame.collect()]
+        profiled = frame.withColumn(
+            "identity_count", F.count(F.lit(1)).over(Window.partitionBy("rental_id"))
+        )
+        invalid = (
+            F.when(F.col("rental_id").isNull() | F.col("bike_id").isNull(), "invalid_required_value")
+            .when(
+                F.col("start_ts_naive").isNull() | F.col("end_ts_naive").isNull(),
+                "invalid_timestamp",
+            )
+            .when(F.col("end_ts_naive") <= F.col("start_ts_naive"), "invalid_timestamp_order")
+            .when(F.col("duration_ms").isNull() | (F.col("duration_ms") <= 0), "invalid_duration")
+            .when(
+                (F.col("start_station_code").isNull() & F.col("start_station_name").isNull())
+                | (F.col("end_station_code").isNull() & F.col("end_station_name").isNull()),
+                "invalid_station",
+            )
+            .when(
+                ~F.to_date("start_ts_naive").between(
+                    F.lit(metadata["ownership_period"]["start"]).cast("date"),
+                    F.lit(metadata["ownership_period"]["end"]).cast("date"),
+                ),
+                "outside_ownership_period",
+            )
+            .when(F.col("identity_count") > 1, "duplicate_row_identity")
+        )
+        records = [
+            row.asDict(recursive=False)
+            for row in profiled.withColumn("validation_code", invalid).collect()
+        ]
     except Exception as error:
-        raise ObjectValidationError("malformed_csv", str(error)) from error
+        message = str(error)
+        if duration_source in message or "NumberFormatException" in message:
+            raise ObjectValidationError("invalid_duration", message) from error
+        raise ObjectValidationError("malformed_csv", message) from error
     if len(records) != metadata["expected_source_rows"]:
         raise ObjectValidationError(
             "source_row_count_mismatch",
             f"parsed {len(records)} rows; expected {metadata['expected_source_rows']}",
         )
+    invalid_code = next(
+        (record["validation_code"] for record in records if record["validation_code"]), None
+    )
+    if invalid_code:
+        raise ObjectValidationError(invalid_code, f"Spark native validation failed: {invalid_code}")
 
-    period_start = date.fromisoformat(metadata["ownership_period"]["start"])
-    period_end = date.fromisoformat(metadata["ownership_period"]["end"])
-    normalized = []
-    seen = set()
-    for record in records:
-        rental_id = required_text(record["rental_id"], "rental_id")
-        identity = (variant["schema_family"], rental_id)
-        if identity in seen:
-            raise ObjectValidationError("duplicate_row_identity", f"duplicate identity {identity!r}")
-        seen.add(identity)
-        start = parse_source_time(record["start_ts_source"], mapping["timestamp_formats"], "start_ts")
-        end = parse_source_time(record["end_ts_source"], mapping["timestamp_formats"], "end_ts")
-        if not period_start <= start.date() <= period_end:
-            raise ObjectValidationError(
-                "outside_ownership_period",
-                f"start date {start.date()} is outside declared ownership",
-            )
-        if end <= start:
-            raise ObjectValidationError("invalid_timestamp_order", "end_ts must be after start_ts")
-        duration_text = required_text(record["duration_source"], "duration")
-        try:
-            duration = int(duration_text)
-        except ValueError as error:
-            raise ObjectValidationError("invalid_duration", duration_text) from error
-        if duration <= 0:
-            raise ObjectValidationError("invalid_duration", duration_text)
-        start_code = normalized_text(record["start_station_code"])
-        start_name = normalized_text(record["start_station_name"])
-        end_code = normalized_text(record["end_station_code"])
-        end_name = normalized_text(record["end_station_name"])
-        if not (start_code or start_name) or not (end_code or end_name):
-            raise ObjectValidationError("invalid_station", "each endpoint needs a code or name")
-        normalized.append(
-            {
-                "schema_family": variant["schema_family"],
-                "header_variant_id": metadata["header_variant_id"],
-                "rental_id": rental_id,
-                "bike_id": required_text(record["bike_id"], "bike_id"),
-                "bike_model": normalized_text(record["bike_model"]),
-                "start_ts_local": start.isoformat(),
-                "end_ts_local": end.isoformat(),
-                "source_timezone": "Europe/London",
-                "duration_ms": duration * mapping["duration_multiplier"],
-                "start_station_code": start_code,
-                "start_station_name": start_name,
-                "end_station_code": end_code,
-                "end_station_name": end_name,
-                "source_object_id": metadata["object_id"],
-                "ownership_start": metadata["ownership_period"]["start"],
-                "ownership_end": metadata["ownership_period"]["end"],
-            }
-        )
-    return normalized
+    period_start = metadata["ownership_period"]["start"]
+    period_end = metadata["ownership_period"]["end"]
+    return [
+        {
+            "schema_family": variant["schema_family"],
+            "header_variant_id": metadata["header_variant_id"],
+            "rental_id": record["rental_id"],
+            "bike_id": record["bike_id"],
+            "bike_model": record["bike_model"],
+            "start_ts_local": _aware_iso(
+                record["start_ts_source"], mapping["timestamp_formats"], "start_ts"
+            ),
+            "end_ts_local": _aware_iso(
+                record["end_ts_source"], mapping["timestamp_formats"], "end_ts"
+            ),
+            "source_timezone": "Europe/London",
+            "duration_ms": record["duration_ms"],
+            "start_station_code": record["start_station_code"],
+            "start_station_name": record["start_station_name"],
+            "end_station_code": record["end_station_code"],
+            "end_station_name": record["end_station_name"],
+            "source_object_id": metadata["object_id"],
+            "ownership_start": period_start,
+            "ownership_end": period_end,
+        }
+        for record in records
+    ]
 
 
 def write_parquet(rows: list[dict[str, Any]], destination: Path) -> None:

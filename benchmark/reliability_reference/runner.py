@@ -24,6 +24,14 @@ def _period_contains(row: dict[str, Any], metadata: dict[str, Any]) -> bool:
     return metadata["ownership_period"]["start"] <= row_date <= metadata["ownership_period"]["end"]
 
 
+def _periods_overlap(left: dict[str, str], right: dict[str, str]) -> bool:
+    return left["start"] <= right["end"] and right["start"] <= left["end"]
+
+
+def _row_identity(row: dict[str, Any]) -> tuple[str, str]:
+    return row["schema_family"], row["rental_id"]
+
+
 def _result(
     case_id: str,
     engine: str,
@@ -113,12 +121,33 @@ def run_case(
                     raise ObjectValidationError(
                         "ownership_period_mismatch", "replacement ownership differs"
                     )
+                retained_rows = [
+                    row for row in state["canonical_rows"] if not _period_contains(row, metadata)
+                ]
+            else:
+                retained_rows = list(state["canonical_rows"])
+                for active in state["active_objects"].values():
+                    if _periods_overlap(active["ownership_period"], metadata["ownership_period"]):
+                        raise ObjectValidationError(
+                            "ownership_period_overlap",
+                            f"ownership overlaps active object {active['object_id']}",
+                        )
+            retained_identities = {_row_identity(row) for row in retained_rows}
+            duplicate_identity = next(
+                (_row_identity(row) for row in rows if _row_identity(row) in retained_identities),
+                None,
+            )
+            if duplicate_identity:
+                raise ObjectValidationError(
+                    "duplicate_state_identity",
+                    f"identity {duplicate_identity!r} already exists in active state",
+                )
         except ObjectValidationError as error:
             event = {
                 **base,
                 "disposition": "rejected",
                 "reason_code": error.code,
-                "reason": str(error),
+                "reason": error.code,
                 "input_rows": metadata["expected_source_rows"],
                 "accepted_rows": 0,
                 "rejected_rows": metadata["expected_source_rows"],

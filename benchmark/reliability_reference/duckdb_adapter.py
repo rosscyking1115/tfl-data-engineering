@@ -1,23 +1,64 @@
-"""DuckDB-native CSV normalization adapter."""
+"""DuckDB-native typed CSV normalization adapter."""
 
-from datetime import date
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import duckdb
 
-from .canonical import normalized_text, parse_source_time, required_text
 from .contracts import ObjectValidationError, find_variant, read_headers, schema_map
+
+LONDON = ZoneInfo("Europe/London")
 
 
 def _quoted(identifier: str) -> str:
     return '"' + identifier.replace('"', '""') + '"'
 
 
+def _literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
 def _text_expression(source: str | None, target: str) -> str:
     if source is None:
         return f"NULL::VARCHAR AS {_quoted(target)}"
-    return f"NULLIF(trim(CAST({_quoted(source)} AS VARCHAR)), '') AS {_quoted(target)}"
+    return f"NULLIF(trim({_quoted(source)}), '') AS {_quoted(target)}"
+
+
+def _timestamp_expression(source: str, formats: list[str], target: str) -> str:
+    attempts = ", ".join(
+        f"try_strptime({_quoted(source)}, {_literal(format_string)})"
+        for format_string in formats
+    )
+    return f"coalesce({attempts}) AS {_quoted(target)}"
+
+
+def _raw_schema(headers: list[str], duration_source: str) -> str:
+    fields = []
+    for header in headers:
+        raw_type = "BIGINT" if header == duration_source else "VARCHAR"
+        fields.append(f"{_literal(header)}: {_literal(raw_type)}")
+    return "{" + ", ".join(fields) + "}"
+
+
+def _aware_iso(value: datetime, field: str) -> str:
+    candidates = []
+    for fold in (0, 1):
+        aware = value.replace(tzinfo=LONDON, fold=fold)
+        round_trip = aware.astimezone(timezone.utc).astimezone(LONDON).replace(tzinfo=None)
+        if round_trip == value:
+            candidates.append(aware)
+    offsets = {candidate.utcoffset() for candidate in candidates}
+    if not candidates:
+        raise ObjectValidationError(
+            "nonexistent_source_time", f"nonexistent Europe/London {field}: {value!s}"
+        )
+    if len(offsets) > 1:
+        raise ObjectValidationError(
+            "ambiguous_source_time", f"ambiguous Europe/London {field}: {value!s}"
+        )
+    return candidates[0].isoformat()
 
 
 def normalize_object(fixture: Path, metadata: dict[str, Any]) -> list[dict[str, Any]]:
@@ -35,22 +76,46 @@ def normalize_object(fixture: Path, metadata: dict[str, Any]) -> list[dict[str, 
         _text_expression(present("rental_id"), "rental_id"),
         _text_expression(present("bike_id"), "bike_id"),
         _text_expression(present("bike_model"), "bike_model"),
-        _text_expression(present("start_ts"), "start_ts_source"),
-        _text_expression(present("end_ts"), "end_ts_source"),
-        _text_expression(present("duration"), "duration_source"),
         _text_expression(present("start_station_code"), "start_station_code"),
         _text_expression(present("start_station_name"), "start_station_name"),
         _text_expression(present("end_station_code"), "end_station_code"),
         _text_expression(present("end_station_name"), "end_station_name"),
+        _timestamp_expression(present("start_ts"), mapping["timestamp_formats"], "start_ts_naive"),
+        _timestamp_expression(present("end_ts"), mapping["timestamp_formats"], "end_ts_naive"),
+        f"{_quoted(present('duration'))} * {mapping['duration_multiplier']} AS duration_ms",
     ]
+    period_start = metadata["ownership_period"]["start"]
+    period_end = metadata["ownership_period"]["end"]
+    source_schema = _raw_schema(headers, present("duration"))
+    query = f"""
+        WITH typed AS (
+            SELECT {", ".join(expressions)}
+            FROM read_csv(?, header=true, columns={source_schema})
+        ), profiled AS (
+            SELECT *, count(*) OVER (PARTITION BY rental_id) AS identity_count
+            FROM typed
+        )
+        SELECT *, CASE
+            WHEN rental_id IS NULL OR bike_id IS NULL THEN 'invalid_required_value'
+            WHEN start_ts_naive IS NULL OR end_ts_naive IS NULL THEN 'invalid_timestamp'
+            WHEN end_ts_naive <= start_ts_naive THEN 'invalid_timestamp_order'
+            WHEN duration_ms IS NULL OR duration_ms <= 0 THEN 'invalid_duration'
+            WHEN (start_station_code IS NULL AND start_station_name IS NULL)
+              OR (end_station_code IS NULL AND end_station_name IS NULL) THEN 'invalid_station'
+            WHEN CAST(start_ts_naive AS DATE) NOT BETWEEN ?::DATE AND ?::DATE
+              THEN 'outside_ownership_period'
+            WHEN identity_count > 1 THEN 'duplicate_row_identity'
+            ELSE NULL
+        END AS validation_code
+        FROM profiled
+    """
     connection = duckdb.connect(":memory:")
     try:
-        relation = connection.execute(
-            f"SELECT {', '.join(expressions)} FROM read_csv(?, header=true, all_varchar=true)",
-            [str(fixture)],
-        )
+        relation = connection.execute(query, [str(fixture), period_start, period_end])
         columns = [item[0] for item in relation.description]
         records = [dict(zip(columns, values, strict=True)) for values in relation.fetchall()]
+    except duckdb.ConversionException as error:
+        raise ObjectValidationError("invalid_duration", str(error)) from error
     except duckdb.Error as error:
         raise ObjectValidationError("malformed_csv", str(error)) from error
     finally:
@@ -60,60 +125,31 @@ def normalize_object(fixture: Path, metadata: dict[str, Any]) -> list[dict[str, 
             "source_row_count_mismatch",
             f"parsed {len(records)} rows; expected {metadata['expected_source_rows']}",
         )
+    invalid = next((record["validation_code"] for record in records if record["validation_code"]), None)
+    if invalid:
+        raise ObjectValidationError(invalid, f"DuckDB native validation failed: {invalid}")
 
-    period_start = date.fromisoformat(metadata["ownership_period"]["start"])
-    period_end = date.fromisoformat(metadata["ownership_period"]["end"])
-    normalized = []
-    seen = set()
-    for record in records:
-        rental_id = required_text(record["rental_id"], "rental_id")
-        identity = (variant["schema_family"], rental_id)
-        if identity in seen:
-            raise ObjectValidationError("duplicate_row_identity", f"duplicate identity {identity!r}")
-        seen.add(identity)
-        start = parse_source_time(record["start_ts_source"], mapping["timestamp_formats"], "start_ts")
-        end = parse_source_time(record["end_ts_source"], mapping["timestamp_formats"], "end_ts")
-        if not period_start <= start.date() <= period_end:
-            raise ObjectValidationError(
-                "outside_ownership_period",
-                f"start date {start.date()} is outside declared ownership",
-            )
-        if end <= start:
-            raise ObjectValidationError("invalid_timestamp_order", "end_ts must be after start_ts")
-        duration_text = required_text(record["duration_source"], "duration")
-        try:
-            duration = int(duration_text)
-        except ValueError as error:
-            raise ObjectValidationError("invalid_duration", duration_text) from error
-        if duration <= 0:
-            raise ObjectValidationError("invalid_duration", duration_text)
-        start_code = normalized_text(record["start_station_code"])
-        start_name = normalized_text(record["start_station_name"])
-        end_code = normalized_text(record["end_station_code"])
-        end_name = normalized_text(record["end_station_name"])
-        if not (start_code or start_name) or not (end_code or end_name):
-            raise ObjectValidationError("invalid_station", "each endpoint needs a code or name")
-        normalized.append(
-            {
-                "schema_family": variant["schema_family"],
-                "header_variant_id": metadata["header_variant_id"],
-                "rental_id": rental_id,
-                "bike_id": required_text(record["bike_id"], "bike_id"),
-                "bike_model": normalized_text(record["bike_model"]),
-                "start_ts_local": start.isoformat(),
-                "end_ts_local": end.isoformat(),
-                "source_timezone": "Europe/London",
-                "duration_ms": duration * mapping["duration_multiplier"],
-                "start_station_code": start_code,
-                "start_station_name": start_name,
-                "end_station_code": end_code,
-                "end_station_name": end_name,
-                "source_object_id": metadata["object_id"],
-                "ownership_start": metadata["ownership_period"]["start"],
-                "ownership_end": metadata["ownership_period"]["end"],
-            }
-        )
-    return normalized
+    return [
+        {
+            "schema_family": variant["schema_family"],
+            "header_variant_id": metadata["header_variant_id"],
+            "rental_id": record["rental_id"],
+            "bike_id": record["bike_id"],
+            "bike_model": record["bike_model"],
+            "start_ts_local": _aware_iso(record["start_ts_naive"], "start_ts"),
+            "end_ts_local": _aware_iso(record["end_ts_naive"], "end_ts"),
+            "source_timezone": "Europe/London",
+            "duration_ms": record["duration_ms"],
+            "start_station_code": record["start_station_code"],
+            "start_station_name": record["start_station_name"],
+            "end_station_code": record["end_station_code"],
+            "end_station_name": record["end_station_name"],
+            "source_object_id": metadata["object_id"],
+            "ownership_start": period_start,
+            "ownership_end": period_end,
+        }
+        for record in records
+    ]
 
 
 def write_parquet(rows: list[dict[str, Any]], destination: Path) -> None:

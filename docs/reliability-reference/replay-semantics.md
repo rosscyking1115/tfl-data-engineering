@@ -7,9 +7,12 @@ unchanged.
 
 An exact content-hash replay is a no-op. A correction must name an active object and use its exact
 inclusive ownership period; only after full validation does it replace every row in that period.
-An incompatible correction, invalid object, ambiguous timestamp, or injected interruption cannot
-change the visible state. Retrying each of the three interruption hooks produces the same state as
-an uninterrupted run and a clean rebuild.
+A non-correction object whose inclusive ownership period overlaps any active object is rejected.
+Every candidate state is also checked for unique `(schema_family, rental_id)` identities before it
+can be staged. An incompatible correction, invalid object, ambiguous timestamp, ownership overlap,
+duplicate identity, or injected interruption cannot change the visible state. Retrying each of the
+three interruption hooks in both DuckDB and Spark produces the same state as an uninterrupted run
+and a clean rebuild.
 
 State directories are immutable protocol artifacts. The runner performs no implicit garbage
 collection. Workspace deletion or retention is a separate, explicit caller decision so recovery

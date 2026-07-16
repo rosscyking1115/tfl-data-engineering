@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT))
 
 from benchmark.reliability_reference.cli import run  # noqa: E402
 from benchmark.reliability_reference.oracle import assert_expected  # noqa: E402
+from benchmark.reliability_reference.runner import run_case  # noqa: E402
 
 
 def main(output_root: Path) -> None:
@@ -38,7 +39,47 @@ def main(output_root: Path) -> None:
         "source_row_count_mismatch",
         "outside_ownership_period",
         "ambiguous_source_time",
+        "ownership_period_overlap",
+        "duplicate_state_identity",
     }
+
+    clean = run_case(
+        "spark",
+        SCENARIOS / "009_full_rebuild.json",
+        workspace=output_root / "recovery" / "clean",
+    )
+    recovery = []
+    for fault_at in ("after_stage", "after_validation", "before_pointer_swap"):
+        workspace = output_root / "recovery" / fault_at
+        interrupted = run_case(
+            "spark",
+            SCENARIOS / "008_interrupted_publish.json",
+            workspace=workspace,
+            fault_at=fault_at,
+        )
+        pointer = json.loads((workspace / "current.json").read_text(encoding="utf-8"))
+        assert interrupted.terminal_status == "interrupted"
+        assert pointer["state_hash"] == interrupted.state_hash
+        retry = run_case(
+            "spark",
+            SCENARIOS / "008_interrupted_publish.json",
+            workspace=workspace,
+        )
+        assert retry.state_hash == clean.state_hash
+        assert retry.canonical_rows == clean.canonical_rows
+        recovery.append(
+            {
+                "fault_at": fault_at,
+                "pointer_preserved": True,
+                "retry_state_hash": retry.state_hash,
+                "clean_state_hash": clean.state_hash,
+                "result": "PASS",
+            }
+        )
+    (output_root / "spark-recovery.json").write_text(
+        json.dumps({"result": "PASS", "faults": recovery}, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":

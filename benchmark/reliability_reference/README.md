@@ -45,6 +45,11 @@ not perform automatic garbage collection; deleting an old workspace is an explic
   times reject the complete object; UTC is not derived.
 - Invalid values, truncated inputs, unknown headers, and ownership violations reject the complete
   object. Row quarantine is reserved and remains zero.
+- Non-correction ownership periods cannot overlap active objects, and `(schema_family, rental_id)`
+  must remain unique across the complete active state.
+- DuckDB performs typed CSV reads, parsing, and validation in SQL. Spark uses an explicit typed
+  schema plus DataFrame expressions and windows. Only contract/state orchestration and comparison
+  are shared; Europe/London DST fold validation is implemented independently in each adapter.
 - State hashes cover compact, sorted-key UTF-8 JSON with explicit nulls and canonical row order.
 - JSON under `expected/` is the human-readable oracle. Parquet is an interoperability artifact and
   is compared after decoding, never byte-for-byte.

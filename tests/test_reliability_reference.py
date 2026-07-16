@@ -23,9 +23,9 @@ def test_candidate_version_and_fixture_pack_are_frozen_from_gate0():
     assert VERSION == "0.2.0"
     assert CONTRACT_VERSION == "1"
     assert report["fixture_count"] == 8
-    assert report["total_fixture_count"] == 14
+    assert report["total_fixture_count"] == 16
     assert report["gate0_byte_matches"] == 8
-    assert report["publication_decisions"] == {"publish_constructed": 14}
+    assert report["publication_decisions"] == {"publish_constructed": 16}
 
 
 def test_duckdb_normalizes_all_five_verified_header_variants(tmp_path: Path):
@@ -82,6 +82,8 @@ def test_unknown_missing_malformed_truncated_out_of_period_and_dst_reject_atomic
 
     rejected = [item for item in result.reconciliation if item["disposition"] == "rejected"]
     assert {item["reason_code"] for item in rejected} == {
+        "ownership_period_overlap",
+        "duplicate_state_identity",
         "unknown_header",
         "missing_header",
         "invalid_duration",
@@ -92,6 +94,22 @@ def test_unknown_missing_malformed_truncated_out_of_period_and_dst_reject_atomic
     assert len(result.canonical_rows) == 2
     assert all(item["state_hash_before"] == item["state_hash_after"] for item in rejected)
     assert all(item["quarantined_rows"] == 0 for item in rejected)
+
+
+def test_overlapping_ownership_and_statewide_identity_reject_atomically(tmp_path: Path):
+    result = run_case("duckdb", scenario("007_invalid_objects"), workspace=tmp_path)
+
+    overlap = next(item for item in result.reconciliation if item["object_id"].endswith("overlap"))
+    duplicate = next(
+        item for item in result.reconciliation if item["object_id"].endswith("duplicate-identity")
+    )
+    assert overlap["reason_code"] == "ownership_period_overlap"
+    assert duplicate["reason_code"] == "duplicate_state_identity"
+    assert overlap["state_hash_before"] == overlap["state_hash_after"]
+    assert duplicate["state_hash_before"] == duplicate["state_hash_after"]
+    assert len({(row["schema_family"], row["rental_id"]) for row in result.canonical_rows}) == len(
+        result.canonical_rows
+    )
 
 
 @pytest.mark.parametrize(

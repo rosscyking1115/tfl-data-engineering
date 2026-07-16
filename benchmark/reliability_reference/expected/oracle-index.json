@@ -60,6 +60,8 @@
       "state_hash": "sha256:2c798f95640ad9f0efcbd87112922c6cc60c509069dd1224f26a5a7990a2f3bf",
       "events": [
         ["fixture/nextgen-standard", "accepted", ""],
+        ["fixture/nextgen-overlap", "rejected", "ownership_period_overlap"],
+        ["fixture/nextgen-duplicate-identity", "rejected", "duplicate_state_identity"],
         ["fixture/nextgen-unknown-extra", "rejected", "unknown_header"],
         ["fixture/nextgen-missing-header", "rejected", "missing_header"],
         ["fixture/nextgen-invalid-duration", "rejected", "invalid_duration"],
