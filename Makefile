@@ -19,6 +19,7 @@ benchmark-duckdb: benchmark-validate ## run the complete DuckDB conformance suit
 
 benchmark-spark: benchmark-validate ## run Spark 4.0.1 by immutable container digest
 	mkdir -p .benchmark-output/spark
+	chmod 0777 .benchmark-output/spark
 	docker run --rm -v "$(CURDIR):/repo:ro" -v "$(CURDIR)/.benchmark-output/spark:/out" apache/spark:4.0.1-java21-python3@sha256:fb5c5e61e7bb1be94b7f3a31afe1f73c5b4d20b6008f4ffa7278fc085da08a9e /opt/spark/bin/spark-submit /repo/tests/spark_reference_check.py /out
 
 benchmark-compare: ## compare decoded DuckDB and Spark semantics

@@ -66,6 +66,7 @@ jobs:
       - name: Run digest-pinned Spark conformance
         run: |
           mkdir -p benchmark-output/spark
+          chmod 0777 benchmark-output/spark
           docker run --rm \
             -v "$PWD:/repo:ro" \
             -v "$PWD/benchmark-output/spark:/out" \
