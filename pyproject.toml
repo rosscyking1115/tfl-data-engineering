@@ -2,8 +2,8 @@
 # this file only configures pytest and ruff.
 
 [tool.pytest.ini_options]
-# app/, ml/, analysis/, ingestion/ are flat module dirs (no package); expose for imports.
-pythonpath = ["app", "ml", "analysis", "ingestion"]
+# Expose the repository package root plus the existing flat module directories.
+pythonpath = [".", "app", "ml", "analysis", "ingestion"]
 testpaths = ["tests"]
 addopts = "-q"
 
