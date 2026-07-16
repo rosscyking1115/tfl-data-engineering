@@ -85,6 +85,14 @@
         ["fixture/nextgen-standard", "accepted", ""],
         ["fixture/nextgen-new-period", "accepted", ""]
       ]
+    },
+    "011_incompatible_replacement": {
+      "state_ref": "states/nextgen-standard.json",
+      "state_hash": "sha256:2c798f95640ad9f0efcbd87112922c6cc60c509069dd1224f26a5a7990a2f3bf",
+      "events": [
+        ["fixture/nextgen-standard", "accepted", ""],
+        ["fixture/nextgen-incompatible", "rejected", "unknown_header"]
+      ]
     }
   }
 }

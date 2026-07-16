@@ -7,7 +7,7 @@
     "benchmark_version": {"type": "string"},
     "contract_version": {"type": "string"},
     "case_id": {"type": "string"},
-    "engine": {"enum": ["duckdb", "spark"]},
+    "engine": {"enum": ["duckdb", "spark", "delta"]},
     "status": {"enum": ["success", "interrupted", "failed"]},
     "state_hash": {"type": "string"},
     "fixture_hashes": {"type": "array", "items": {"type": "string"}}

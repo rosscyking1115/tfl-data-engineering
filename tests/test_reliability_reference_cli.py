@@ -24,8 +24,8 @@ def test_validate_command_reports_contract_and_fixture_counts():
     assert report["result"] == "PASS"
     assert report["contract_version"] == "1"
     assert report["gate0_byte_matches"] == 8
-    assert report["scenario_count"] == 9
-    assert report["oracle_scenario_count"] == 9
+    assert report["scenario_count"] == 10
+    assert report["oracle_scenario_count"] == 10
 
 
 def test_version_command_is_stable():
@@ -52,8 +52,8 @@ def test_duckdb_all_command_writes_one_result_per_executable_scenario(tmp_path: 
     report = json.loads((output / "conformance.json").read_text(encoding="utf-8"))
     assert report["result"] == "PASS"
     assert report["engine"] == "duckdb"
-    assert len(report["scenarios"]) == 9
-    assert len(list((output / "results").glob("*.json"))) == 9
+    assert len(report["scenarios"]) == 10
+    assert len(list((output / "results").glob("*.json"))) == 10
 
 
 def test_compare_command_returns_nonzero_and_writes_diagnostics_on_mismatch(tmp_path: Path):
@@ -89,3 +89,44 @@ def test_compare_command_returns_nonzero_and_writes_diagnostics_on_mismatch(tmp_
     report = json.loads((output / "comparison.json").read_text(encoding="utf-8"))
     assert report["result"] == "FAIL"
     assert report["scenarios"][0]["field_mismatches"][0]["field"] == "duration_ms"
+
+
+def test_compare_managed_uses_portable_result_as_authoritative_oracle(tmp_path: Path):
+    portable = tmp_path / "portable"
+    managed = tmp_path / "managed"
+    output = tmp_path / "comparison"
+    result = {
+        "case_id": "001_initial_variants",
+        "engine": "duckdb",
+        "canonical_rows": [
+            {"schema_family": "nextgen", "rental_id": "1", "duration_ms": 10}
+        ],
+        "reconciliation": [],
+        "object_history": [],
+        "state_hash": "sha256:expected",
+    }
+    for directory, engine in ((portable, "duckdb"), (managed, "delta")):
+        (directory / "results").mkdir(parents=True)
+        (directory / "results" / "001_initial_variants.json").write_text(
+            json.dumps({**result, "engine": engine}), encoding="utf-8"
+        )
+    (portable / "results" / "portable_only.json").write_text(
+        json.dumps({**result, "case_id": "portable_only"}), encoding="utf-8"
+    )
+
+    completed = run_cli(
+        "compare-managed",
+        "--reference",
+        str(portable),
+        "--managed",
+        str(managed),
+        "--output",
+        str(output),
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    report = json.loads((output / "comparison.json").read_text(encoding="utf-8"))
+    assert report["result"] == "PASS"
+    assert report["reference_engine"] == "duckdb"
+    assert report["managed_engine"] == "delta"
+    assert [item["case_id"] for item in report["scenarios"]] == ["001_initial_variants"]

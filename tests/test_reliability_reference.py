@@ -67,6 +67,17 @@ def test_correction_replaces_the_complete_declared_period(tmp_path: Path):
     assert corrected["duration_ms"] == 900_000
 
 
+def test_incompatible_replacement_preserves_prior_good_state(tmp_path: Path):
+    result = run_case("duckdb", scenario("011_incompatible_replacement"), workspace=tmp_path)
+
+    accepted, rejected = result.reconciliation
+    assert accepted["disposition"] == "accepted"
+    assert rejected["disposition"] == "rejected"
+    assert rejected["reason_code"] == "unknown_header"
+    assert rejected["state_hash_before"] == rejected["state_hash_after"] == result.state_hash
+    assert {row["rental_id"] for row in result.canonical_rows} == {"2001", "2002"}
+
+
 def test_late_arrival_is_order_independent_and_matches_full_rebuild(tmp_path: Path):
     late = run_case("duckdb", scenario("005_late_arrival"), workspace=tmp_path / "late")
     rebuild = run_case("duckdb", scenario("009_full_rebuild"), workspace=tmp_path / "rebuild")
@@ -203,6 +214,7 @@ def test_run_result_is_json_serializable(tmp_path: Path):
         "007_invalid_objects",
         "008_interrupted_publish",
         "009_full_rebuild",
+        "011_incompatible_replacement",
     ],
 )
 def test_duckdb_matches_human_reviewed_oracle(tmp_path: Path, scenario_name: str):

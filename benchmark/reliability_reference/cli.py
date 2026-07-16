@@ -133,6 +133,40 @@ def compare(duckdb_output: Path, spark_output: Path, output: Path) -> dict[str, 
     return report
 
 
+def compare_managed(reference_output: Path, managed_output: Path, output: Path) -> dict[str, Any]:
+    """Compare exported Delta semantics with the authoritative portable output."""
+    reference_results = {
+        path.name: path for path in (reference_output / "results").glob("*.json")
+    }
+    managed_results = {path.name: path for path in (managed_output / "results").glob("*.json")}
+    scenarios = []
+    for name, managed_path in sorted(managed_results.items()):
+        if name not in reference_results:
+            scenarios.append(
+                {
+                    "case_id": Path(name).stem,
+                    "result": "FAIL",
+                    "missing_engine_result": "duckdb",
+                }
+            )
+            continue
+        expected = load_json(reference_results[name])
+        actual = load_json(managed_path)
+        scenarios.append({"case_id": expected["case_id"], **compare_results(expected, actual)})
+    passed = bool(scenarios) and all(item["result"] == "PASS" for item in scenarios)
+    report = {
+        "result": "PASS" if passed else "FAIL",
+        "benchmark_version": VERSION,
+        "contract_version": CONTRACT_VERSION,
+        "comparison": "portable DuckDB oracle versus managed Delta decoded semantics",
+        "reference_engine": "duckdb",
+        "managed_engine": "delta",
+        "scenarios": scenarios,
+    }
+    _write_json(output / "comparison.json", report)
+    return report
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="tfl-reliability")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -146,6 +180,10 @@ def build_parser() -> argparse.ArgumentParser:
     compare_parser.add_argument("--duckdb", type=Path, required=True)
     compare_parser.add_argument("--spark", type=Path, required=True)
     compare_parser.add_argument("--output", type=Path, required=True)
+    managed_parser = commands.add_parser("compare-managed")
+    managed_parser.add_argument("--reference", type=Path, required=True)
+    managed_parser.add_argument("--managed", type=Path, required=True)
+    managed_parser.add_argument("--output", type=Path, required=True)
     return parser
 
 
@@ -162,7 +200,10 @@ def main(arguments: list[str] | None = None) -> int:
             report = run(args.engine, args.scenario, args.output)
             print(json.dumps(report, ensure_ascii=False, indent=2))
             return 0 if report["result"] == "PASS" else 1
-        report = compare(args.duckdb, args.spark, args.output)
+        if args.command == "compare-managed":
+            report = compare_managed(args.reference, args.managed, args.output)
+        else:
+            report = compare(args.duckdb, args.spark, args.output)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0 if report["result"] == "PASS" else 1
     except ContractError as error:
