@@ -1,0 +1,9 @@
+{
+  "case_id": "009_full_rebuild",
+  "contract_version": "1",
+  "evidence_basis": "constructed",
+  "operations": [
+    {"action": "ingest", "object_ref": "nextgen-standard.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-new-period.sidecar.json"}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "object_id": "fixture/classic-standard",
+  "file": "classic-standard.csv",
+  "fixture_kind": "constructed",
+  "evidence_basis": "observed_header_variant",
+  "schema_family": "classic",
+  "variant_key": "classic_standard",
+  "header_variant_id": "sha256:fd29b77240c276d9a36d45413034fb40bfb3f9da796e0aef40fd45ea11a9758c",
+  "content_sha256": "b32321eb0f05baf1703d05269179d639e001c3f9b1dcee76436d9f39f954a1a4",
+  "ownership_period": {"start": "2022-07-27", "end": "2022-07-27"},
+  "expected_source_rows": 1,
+  "supersedes_object_id": null,
+  "publication_decision": "publish_constructed",
+  "expected_disposition": "accept",
+  "origin_gate0_file": "classic-standard.csv",
+  "origin_gate0_sha256": "b32321eb0f05baf1703d05269179d639e001c3f9b1dcee76436d9f39f954a1a4"
+}

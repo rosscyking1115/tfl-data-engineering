@@ -1,0 +1,17 @@
+{
+  "object_id": "fixture/nextgen-interleaved",
+  "file": "nextgen-interleaved.csv",
+  "fixture_kind": "constructed",
+  "evidence_basis": "observed_header_variant",
+  "schema_family": "nextgen",
+  "variant_key": "nextgen_interleaved_station_order",
+  "header_variant_id": "sha256:8f4bcab54708e7b33d943a4b9b323c66008ec09ee445918564c6fedbd194e418",
+  "content_sha256": "9fbdbc21a15ce353b575dbf30cf18c2fe912dd54bae0b9d4b94db3c618305b85",
+  "ownership_period": {"start": "2025-07-16", "end": "2025-07-16"},
+  "expected_source_rows": 1,
+  "supersedes_object_id": null,
+  "publication_decision": "publish_constructed",
+  "expected_disposition": "accept",
+  "origin_gate0_file": "nextgen-interleaved.csv",
+  "origin_gate0_sha256": "9fbdbc21a15ce353b575dbf30cf18c2fe912dd54bae0b9d4b94db3c618305b85"
+}

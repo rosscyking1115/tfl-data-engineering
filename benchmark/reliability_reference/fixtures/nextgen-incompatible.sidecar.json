@@ -1,0 +1,17 @@
+{
+  "object_id": "fixture/nextgen-incompatible",
+  "file": "nextgen-incompatible.csv",
+  "fixture_kind": "constructed",
+  "evidence_basis": "constructed_recovery_case",
+  "schema_family": null,
+  "variant_key": null,
+  "header_variant_id": "sha256:e53ca397017db7aa921ae07b0922a5f0ba5d2b39494f5ca23c828946aa988191",
+  "content_sha256": "d5f6f87644744f84cbe4bd7f42229d032565c9ade2d9c425c5c89518ba8e6598",
+  "ownership_period": {"start": "2026-01-01", "end": "2026-01-02"},
+  "expected_source_rows": 1,
+  "supersedes_object_id": "fixture/nextgen-standard",
+  "publication_decision": "publish_constructed",
+  "expected_disposition": "reject",
+  "origin_gate0_file": "nextgen-incompatible.csv",
+  "origin_gate0_sha256": "d5f6f87644744f84cbe4bd7f42229d032565c9ade2d9c425c5c89518ba8e6598"
+}

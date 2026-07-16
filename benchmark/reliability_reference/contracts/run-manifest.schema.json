@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "run-manifest.schema.json",
+  "type": "object",
+  "required": ["case_id", "status"],
+  "properties": {
+    "benchmark_version": {"type": "string"},
+    "contract_version": {"type": "string"},
+    "case_id": {"type": "string"},
+    "engine": {"enum": ["duckdb", "spark"]},
+    "status": {"enum": ["success", "interrupted", "failed"]},
+    "state_hash": {"type": "string"},
+    "fixture_hashes": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

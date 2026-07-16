@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scenario.schema.json",
+  "type": "object",
+  "required": ["case_id", "contract_version", "evidence_basis", "operations"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "contract_version": {"const": "1"},
+    "evidence_basis": {"type": "string"},
+    "operations": {"type": "array", "minItems": 1}
+  },
+  "additionalProperties": false
+}

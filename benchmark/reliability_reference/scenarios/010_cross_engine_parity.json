@@ -1,0 +1,15 @@
+{
+  "case_id": "010_cross_engine_parity",
+  "contract_version": "1",
+  "scenario_refs": [
+    "001_initial_variants",
+    "002_duplicate_replay",
+    "003_new_period",
+    "004_corrected_period",
+    "005_late_arrival",
+    "006_header_compatibility",
+    "007_invalid_objects",
+    "008_interrupted_publish",
+    "009_full_rebuild"
+  ]
+}
