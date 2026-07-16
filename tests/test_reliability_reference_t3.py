@@ -258,6 +258,7 @@ def test_managed_release_requires_pass_and_complete_teardown_absence():
         "bundle_hash": "a" * 64,
         "fixture_manifest_hash": "b" * 64,
         "claim_ledger_hash": "c" * 64,
+        "candidate_tree_hash": "e" * 64,
         "first_deployment_utc": "2026-07-16T20:00:00Z",
         "deadline_utc": "2026-07-16T22:00:00Z",
         "scenario_results": [

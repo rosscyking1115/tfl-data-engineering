@@ -51,6 +51,7 @@ def validate_managed_release_evidence(evidence: dict[str, Any]) -> None:
         "bundle_hash",
         "fixture_manifest_hash",
         "claim_ledger_hash",
+        "candidate_tree_hash",
         "first_deployment_utc",
         "deadline_utc",
         "scenario_results",
@@ -71,7 +72,12 @@ def validate_managed_release_evidence(evidence: dict[str, Any]) -> None:
         raise ReleaseError("managed PASS evidence exceeds the bounded attempt count")
     if evidence["reason_code"] != "managed_conformance_pass":
         raise ReleaseError("managed PASS evidence has the wrong reason code")
-    for field in ("bundle_hash", "fixture_manifest_hash", "claim_ledger_hash"):
+    for field in (
+        "bundle_hash",
+        "fixture_manifest_hash",
+        "claim_ledger_hash",
+        "candidate_tree_hash",
+    ):
         if not _SHA256.fullmatch(str(evidence[field])):
             raise ReleaseError(f"managed PASS evidence requires a SHA-256 {field}")
     try:
@@ -169,7 +175,7 @@ def _blob(repo: Path, ref: str, path: str) -> bytes:
     return bytes(value)
 
 
-def _fixture_manifest_hash(repo: Path, ref: str) -> str:
+def _tree_manifest_hash(repo: Path, ref: str, *roots: str) -> str:
     rendered = _git(
         repo,
         "ls-tree",
@@ -177,7 +183,7 @@ def _fixture_manifest_hash(repo: Path, ref: str) -> str:
         "--name-only",
         ref,
         "--",
-        "benchmark/reliability_reference/fixtures",
+        *roots,
         text=True,
     )
     entries = [
@@ -186,6 +192,10 @@ def _fixture_manifest_hash(repo: Path, ref: str) -> str:
     ]
     encoded = json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _fixture_manifest_hash(repo: Path, ref: str) -> str:
+    return _tree_manifest_hash(repo, ref, "benchmark/reliability_reference/fixtures")
 
 
 def _sha256(path: Path) -> str:
@@ -327,14 +337,6 @@ def main() -> int:
             )
         )
         validate_managed_release_evidence(evidence)
-        candidate = str(evidence["candidate_commit"])
-        ancestor = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", candidate, target],
-            cwd=repo,
-            check=False,
-        )
-        if ancestor.returncode != 0:
-            raise ReleaseError("managed candidate commit is not an ancestor of the release target")
         expected_hashes = {
             "bundle_hash": hashlib.sha256(
                 _blob(repo, target, "infra/databricks/reliability_reference/databricks.yml")
@@ -347,6 +349,12 @@ def main() -> int:
                     "docs/reliability-reference/releases/0.3.0/claim-ledger.json",
                 )
             ).hexdigest(),
+            "candidate_tree_hash": _tree_manifest_hash(
+                repo,
+                target,
+                "benchmark/reliability_reference",
+                "infra/databricks/reliability_reference",
+            ),
         }
         for field, expected in expected_hashes.items():
             if evidence[field] != expected:

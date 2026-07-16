@@ -11,6 +11,7 @@
   "bundle_hash": null,
   "fixture_manifest_hash": null,
   "claim_ledger_hash": null,
+  "candidate_tree_hash": null,
   "scenario_results": [],
   "portable_comparison": null,
   "delta_history": {},
