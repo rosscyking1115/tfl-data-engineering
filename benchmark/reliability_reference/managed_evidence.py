@@ -7,6 +7,10 @@ import re
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from .constants import MANAGED_SCENARIOS
+from .contracts import ContractError
+from .oracle import assert_expected
+
 
 class EvidenceError(ValueError):
     """Managed evidence is unsafe or does not satisfy the release gate."""
@@ -82,6 +86,56 @@ def validate_managed_evidence(evidence: Mapping[str, Any]) -> None:
         raise EvidenceError("teardown must be independently verified")
     if evidence["result"] == "PASS" and not teardown.get("required"):
         raise EvidenceError("PASS requires a managed teardown")
+
+
+def validate_managed_scenario_results(results: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """Require complete oracle parity and all recovery invariants before managed PASS."""
+
+    normal = [item for item in results if "result" in item]
+    normal_names = [str(item.get("scenario")) for item in normal]
+    if len(normal_names) != len(set(normal_names)) or set(normal_names) != set(MANAGED_SCENARIOS):
+        raise EvidenceError("managed scenario completeness differs from the bounded case set")
+    by_name = {str(item["scenario"]): item["result"] for item in normal}
+    for scenario_name in MANAGED_SCENARIOS:
+        result = by_name[scenario_name]
+        if not isinstance(result, Mapping) or result.get("terminal_status") != "success":
+            raise EvidenceError(f"{scenario_name}: managed terminal status is not success")
+        try:
+            assert_expected(dict(result), scenario_name)
+        except ContractError as error:
+            raise EvidenceError(f"{scenario_name}: managed result differs from oracle: {error}") from error
+
+    faults = [item for item in results if "fault_at" in item]
+    expected_faults = {"after_stage", "after_validation", "before_pointer_swap"}
+    actual_faults = {str(item.get("fault_at")) for item in faults}
+    if len(faults) != len(expected_faults) or actual_faults != expected_faults:
+        raise EvidenceError("managed fault-hook completeness differs from the contract")
+    clean = by_name["009_full_rebuild"]
+    uninterrupted = by_name["008_interrupted_publish"]
+    if (
+        uninterrupted["state_hash"] != clean["state_hash"]
+        or uninterrupted["canonical_rows"] != clean["canonical_rows"]
+    ):
+        raise EvidenceError("uninterrupted execution differs from the clean rebuild")
+    for item in faults:
+        interrupted = item.get("interrupted", {})
+        pointer = item.get("pointer_after_fault", {})
+        retry = item.get("retry", {})
+        if interrupted.get("terminal_status") != "interrupted":
+            raise EvidenceError(f"{item.get('fault_at')}: fault did not interrupt")
+        if pointer.get("state_hash") != interrupted.get("state_hash"):
+            raise EvidenceError(f"{item.get('fault_at')}: pointer changed after interruption")
+        if retry.get("terminal_status") != "success":
+            raise EvidenceError(f"{item.get('fault_at')}: retry did not succeed")
+        if retry.get("state_hash") != clean["state_hash"] or retry.get("canonical_rows") != clean[
+            "canonical_rows"
+        ]:
+            raise EvidenceError(f"{item.get('fault_at')}: retry differs from clean rebuild")
+    return {
+        "scenario_count": len(normal),
+        "fault_hook_count": len(faults),
+        "oracle_result": "PASS",
+    }
 
 
 def build_release_manifest(root: Path, files: Iterable[Path]) -> list[dict[str, Any]]:

@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from benchmark.reliability_reference.constants import MANAGED_SCENARIOS
+
 ROOT = Path(__file__).parents[1]
 
 
@@ -95,23 +97,24 @@ def test_compare_managed_uses_portable_result_as_authoritative_oracle(tmp_path: 
     portable = tmp_path / "portable"
     managed = tmp_path / "managed"
     output = tmp_path / "comparison"
-    result = {
-        "case_id": "001_initial_variants",
-        "engine": "duckdb",
-        "canonical_rows": [
-            {"schema_family": "nextgen", "rental_id": "1", "duration_ms": 10}
-        ],
-        "reconciliation": [],
-        "object_history": [],
-        "state_hash": "sha256:expected",
-    }
-    for directory, engine in ((portable, "duckdb"), (managed, "delta")):
+    for directory in (portable, managed):
         (directory / "results").mkdir(parents=True)
-        (directory / "results" / "001_initial_variants.json").write_text(
-            json.dumps({**result, "engine": engine}), encoding="utf-8"
-        )
+    for case_id in MANAGED_SCENARIOS:
+        result = {
+            "case_id": case_id,
+            "canonical_rows": [
+                {"schema_family": "nextgen", "rental_id": case_id, "duration_ms": 10}
+            ],
+            "reconciliation": [],
+            "object_history": [],
+            "state_hash": f"sha256:{case_id}",
+        }
+        for directory, engine in ((portable, "duckdb"), (managed, "delta")):
+            (directory / "results" / f"{case_id}.json").write_text(
+                json.dumps({**result, "engine": engine}), encoding="utf-8"
+            )
     (portable / "results" / "portable_only.json").write_text(
-        json.dumps({**result, "case_id": "portable_only"}), encoding="utf-8"
+        json.dumps({"case_id": "portable_only"}), encoding="utf-8"
     )
 
     completed = run_cli(
@@ -129,4 +132,45 @@ def test_compare_managed_uses_portable_result_as_authoritative_oracle(tmp_path: 
     assert report["result"] == "PASS"
     assert report["reference_engine"] == "duckdb"
     assert report["managed_engine"] == "delta"
-    assert [item["case_id"] for item in report["scenarios"]] == ["001_initial_variants"]
+    assert [item["case_id"] for item in report["scenarios"]] == list(MANAGED_SCENARIOS)
+
+
+def test_compare_managed_fails_for_missing_or_unexpected_managed_scenarios(tmp_path: Path):
+    portable = tmp_path / "portable" / "results"
+    managed = tmp_path / "managed" / "results"
+    portable.mkdir(parents=True)
+    managed.mkdir(parents=True)
+    result = {
+        "canonical_rows": [],
+        "reconciliation": [],
+        "object_history": [],
+        "state_hash": "sha256:empty",
+    }
+    for case_id in MANAGED_SCENARIOS:
+        (portable / f"{case_id}.json").write_text(
+            json.dumps({**result, "case_id": case_id}), encoding="utf-8"
+        )
+    for case_id in MANAGED_SCENARIOS[:-1]:
+        (managed / f"{case_id}.json").write_text(
+            json.dumps({**result, "case_id": case_id}), encoding="utf-8"
+        )
+    (managed / "unexpected.json").write_text(
+        json.dumps({**result, "case_id": "unexpected"}), encoding="utf-8"
+    )
+
+    completed = run_cli(
+        "compare-managed",
+        "--reference",
+        str(portable.parent),
+        "--managed",
+        str(managed.parent),
+        "--output",
+        str(tmp_path / "comparison"),
+    )
+
+    assert completed.returncode == 1
+    report = json.loads(
+        (tmp_path / "comparison" / "comparison.json").read_text(encoding="utf-8")
+    )
+    assert any("missing_managed_result" in item for item in report["scenarios"])
+    assert any("unexpected_managed_result" in item for item in report["scenarios"])

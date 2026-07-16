@@ -21,16 +21,6 @@ from .models import RunResult
 FaultPoint = str | None
 Normalizer = Callable[[Path, dict[str, Any]], list[dict[str, Any]]]
 
-MANAGED_SCENARIOS = (
-    "001_initial_variants",
-    "002_duplicate_replay",
-    "003_new_period",
-    "004_corrected_period",
-    "008_interrupted_publish",
-    "009_full_rebuild",
-    "011_incompatible_replacement",
-)
-
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 

@@ -6,9 +6,8 @@ from typing import Any
 import pytest
 
 from benchmark.reliability_reference.canonical import ordered_rows, state_hash
-from benchmark.reliability_reference.constants import EMPTY_STATE_HASH
+from benchmark.reliability_reference.constants import EMPTY_STATE_HASH, MANAGED_SCENARIOS
 from benchmark.reliability_reference.delta_runner import (
-    MANAGED_SCENARIOS,
     DeltaStateStore,
     DeltaTableNames,
     _execute_managed_case,
@@ -20,6 +19,7 @@ from benchmark.reliability_reference.managed_evidence import (
     redact_evidence,
     resource_names,
     validate_managed_evidence,
+    validate_managed_scenario_results,
 )
 from scripts.build_reliability_release import (
     T2_COMMIT,
@@ -240,6 +240,9 @@ def test_release_builder_emits_constructed_pack_sbom_and_checksums(tmp_path: Pat
     sbom = json.loads(outputs["sbom"].read_text(encoding="utf-8"))
     assert sbom["spdxVersion"] == "SPDX-2.3"
     assert sbom["dataLicense"] == "CC0-1.0"
+    file_ids = [item["SPDXID"] for item in sbom["files"]]
+    assert len(file_ids) == len(set(file_ids))
+    assert all(value.startswith("SPDXRef-File-") for value in file_ids)
     checksums = outputs["checksums"].read_text(encoding="utf-8")
     assert archive.name in checksums
     assert outputs["sbom"].name in checksums
@@ -248,6 +251,28 @@ def test_release_builder_emits_constructed_pack_sbom_and_checksums(tmp_path: Pat
 def test_managed_release_requires_pass_and_complete_teardown_absence():
     valid = {
         "result": "PASS",
+        "baseline_commit": T2_COMMIT,
+        "candidate_commit": "d" * 40,
+        "managed_attempts": 1,
+        "reason_code": "managed_conformance_pass",
+        "bundle_hash": "a" * 64,
+        "fixture_manifest_hash": "b" * 64,
+        "claim_ledger_hash": "c" * 64,
+        "first_deployment_utc": "2026-07-16T20:00:00Z",
+        "deadline_utc": "2026-07-16T22:00:00Z",
+        "scenario_results": [
+            {"case_id": name, "result": "PASS"} for name in MANAGED_SCENARIOS
+        ],
+        "portable_comparison": {
+            "result": "PASS",
+            "scenarios": [{"case_id": name, "result": "PASS"} for name in MANAGED_SCENARIOS],
+        },
+        "delta_history": {
+            name: [{"version": 0}]
+            for name in ("staging", "states", "manifests", "current_pointer", "run_events")
+        },
+        "resource_inventory_before": [],
+        "resource_inventory_after": [],
         "teardown": {
             "required": True,
             "verified": True,
@@ -263,6 +288,11 @@ def test_managed_release_requires_pass_and_complete_teardown_absence():
     with pytest.raises(ReleaseError, match="resource absence"):
         validate_managed_release_evidence(
             {**valid, "teardown": {**valid["teardown"], "volume_absent": False}}
+        )
+
+    with pytest.raises(ReleaseError, match="scenario completeness"):
+        validate_managed_release_evidence(
+            {**valid, "scenario_results": valid["scenario_results"][:-1]}
         )
 
 
@@ -325,3 +355,52 @@ def test_managed_state_protocol_preserves_pointer_and_retry_matches_clean_rebuil
 
     assert retry.state_hash == clean.state_hash
     assert retry.canonical_rows == clean.canonical_rows
+
+
+def test_managed_report_gate_requires_all_oracle_cases_and_fault_invariants():
+    normal_results = []
+    for scenario_name in MANAGED_SCENARIOS:
+        result = _execute_managed_case(
+            "delta",
+            json.loads((SCENARIOS / f"{scenario_name}.json").read_text(encoding="utf-8")),
+            store=MemoryManagedStore(),
+            normalizer=normalize_object,
+        )
+        normal_results.append({"scenario": scenario_name, "result": result.to_dict()})
+    fault_results = []
+    for fault in ("after_stage", "after_validation", "before_pointer_swap"):
+        store = MemoryManagedStore()
+        interrupted = _execute_managed_case(
+            "delta",
+            json.loads((SCENARIOS / "008_interrupted_publish.json").read_text(encoding="utf-8")),
+            store=store,
+            normalizer=normalize_object,
+            fault_at=fault,
+        )
+        pointer = store.load("008_interrupted_publish")
+        retry = _execute_managed_case(
+            "delta",
+            json.loads((SCENARIOS / "008_interrupted_publish.json").read_text(encoding="utf-8")),
+            store=store,
+            normalizer=normalize_object,
+        )
+        fault_results.append(
+            {
+                "scenario": "008_interrupted_publish",
+                "fault_at": fault,
+                "interrupted": interrupted.to_dict(),
+                "pointer_after_fault": {
+                    "state_version": pointer["state_version"],
+                    "state_hash": pointer["state_hash"],
+                },
+                "retry": retry.to_dict(),
+            }
+        )
+    results = [*normal_results, *fault_results]
+
+    validate_managed_scenario_results(results)
+
+    broken = json.loads(json.dumps(results))
+    broken[0]["result"]["state_hash"] = "sha256:wrong"
+    with pytest.raises(EvidenceError, match="oracle"):
+        validate_managed_scenario_results(broken)

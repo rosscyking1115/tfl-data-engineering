@@ -5,14 +5,21 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from benchmark.reliability_reference.constants import MANAGED_SCENARIOS
+from benchmark.reliability_reference.managed_evidence import redact_evidence
+
 T2_COMMIT = "45125f1e064f28ce03ef7e0f15acceb18c34604f"
 ALLOWED_ROOTS = ("benchmark/reliability_reference/", "docs/reliability-reference/")
+DELTA_TABLES = ("staging", "states", "manifests", "current_pointer", "run_events")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
 
 class ReleaseError(ValueError):
@@ -36,6 +43,80 @@ def validate_release_policy(version: str, result: str, target_commit: str) -> No
 def validate_managed_release_evidence(evidence: dict[str, Any]) -> None:
     if evidence.get("result") != "PASS":
         raise ReleaseError("version 0.3.0 requires committed managed PASS evidence")
+    required = {
+        "baseline_commit",
+        "candidate_commit",
+        "managed_attempts",
+        "reason_code",
+        "bundle_hash",
+        "fixture_manifest_hash",
+        "claim_ledger_hash",
+        "first_deployment_utc",
+        "deadline_utc",
+        "scenario_results",
+        "portable_comparison",
+        "delta_history",
+        "resource_inventory_before",
+        "resource_inventory_after",
+        "teardown",
+    }
+    missing = sorted(required - evidence.keys())
+    if missing:
+        raise ReleaseError(f"managed PASS evidence is missing fields: {missing}")
+    if evidence["baseline_commit"] != T2_COMMIT:
+        raise ReleaseError("managed PASS evidence has the wrong T2 baseline commit")
+    if not _COMMIT.fullmatch(str(evidence["candidate_commit"])):
+        raise ReleaseError("managed PASS evidence requires a full candidate commit")
+    if evidence["managed_attempts"] not in {1, 2}:
+        raise ReleaseError("managed PASS evidence exceeds the bounded attempt count")
+    if evidence["reason_code"] != "managed_conformance_pass":
+        raise ReleaseError("managed PASS evidence has the wrong reason code")
+    for field in ("bundle_hash", "fixture_manifest_hash", "claim_ledger_hash"):
+        if not _SHA256.fullmatch(str(evidence[field])):
+            raise ReleaseError(f"managed PASS evidence requires a SHA-256 {field}")
+    try:
+        started = datetime.fromisoformat(str(evidence["first_deployment_utc"]).replace("Z", "+00:00"))
+        deadline = datetime.fromisoformat(str(evidence["deadline_utc"]).replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ReleaseError("managed PASS evidence has invalid UTC bounds") from error
+    duration = (deadline - started).total_seconds()
+    if started.utcoffset() != timezone.utc.utcoffset(started) or not 0 < duration <= 7200:
+        raise ReleaseError("managed PASS evidence exceeds the two-hour UTC window")
+
+    scenario_results = evidence["scenario_results"]
+    if not isinstance(scenario_results, list):
+        raise ReleaseError("managed scenario completeness is not a list")
+    if not all(isinstance(item, dict) for item in scenario_results):
+        raise ReleaseError("managed scenario completeness contains invalid entries")
+    scenario_names = [item.get("case_id") for item in scenario_results]
+    if scenario_names != list(MANAGED_SCENARIOS) or not all(
+        item.get("result") == "PASS" for item in scenario_results
+    ):
+        raise ReleaseError("managed scenario completeness does not match the bounded case set")
+    comparison = evidence["portable_comparison"]
+    if not isinstance(comparison, dict):
+        raise ReleaseError("managed PASS evidence lacks portable comparison")
+    comparison_scenarios = comparison.get("scenarios", [])
+    if not isinstance(comparison_scenarios, list) or not all(
+        isinstance(item, dict) for item in comparison_scenarios
+    ):
+        raise ReleaseError("managed PASS evidence has invalid portable comparison entries")
+    if comparison.get("result") != "PASS" or [
+        item.get("case_id") for item in comparison_scenarios
+    ] != list(MANAGED_SCENARIOS) or not all(
+        item.get("result") == "PASS" for item in comparison_scenarios
+    ):
+        raise ReleaseError("managed PASS evidence lacks complete portable comparison")
+    history = evidence["delta_history"]
+    if not isinstance(history, dict) or any(not history.get(table) for table in DELTA_TABLES):
+        raise ReleaseError("managed PASS evidence lacks Delta history for every owned table")
+    if not isinstance(evidence["resource_inventory_before"], list) or not isinstance(
+        evidence["resource_inventory_after"], list
+    ):
+        raise ReleaseError("managed PASS evidence requires resource inventories")
+    if redact_evidence(evidence) != evidence:
+        raise ReleaseError("managed PASS evidence contains unredacted identity or credentials")
+
     teardown = evidence.get("teardown", {})
     required_absence = (
         "job_absent",
@@ -88,6 +169,25 @@ def _blob(repo: Path, ref: str, path: str) -> bytes:
     return bytes(value)
 
 
+def _fixture_manifest_hash(repo: Path, ref: str) -> str:
+    rendered = _git(
+        repo,
+        "ls-tree",
+        "-r",
+        "--name-only",
+        ref,
+        "--",
+        "benchmark/reliability_reference/fixtures",
+        text=True,
+    )
+    entries = [
+        {"path": path, "sha256": hashlib.sha256(_blob(repo, ref, path)).hexdigest()}
+        for path in sorted(line.strip() for line in str(rendered).splitlines() if line.strip())
+    ]
+    encoded = json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -111,17 +211,22 @@ def build_release(
     archive = output / f"reliability-reference-v{version}.zip"
     file_entries: list[dict[str, Any]] = []
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as pack:
-        for path in paths:
+        for index, path in enumerate(paths, start=1):
             payload = _blob(repo, ref, path)
+            payload_hash = hashlib.sha256(payload).hexdigest()
             info = zipfile.ZipInfo(path, date_time=(2026, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o644 << 16
             pack.writestr(info, payload)
             file_entries.append(
                 {
+                    "SPDXID": f"SPDXRef-File-{index}-{payload_hash[:12]}",
                     "fileName": path,
+                    "licenseConcluded": "NOASSERTION",
+                    "licenseInfoInFiles": ["NOASSERTION"],
+                    "copyrightText": "NOASSERTION",
                     "checksums": [
-                        {"algorithm": "SHA256", "checksumValue": hashlib.sha256(payload).hexdigest()}
+                        {"algorithm": "SHA256", "checksumValue": payload_hash}
                     ],
                 }
             )
@@ -147,6 +252,14 @@ def build_release(
                     "creators": ["Tool: build_reliability_release.py"],
                 },
                 "files": file_entries,
+                "relationships": [
+                    {
+                        "spdxElementId": "SPDXRef-DOCUMENT",
+                        "relationshipType": "DESCRIBES",
+                        "relatedSpdxElement": item["SPDXID"],
+                    }
+                    for item in file_entries
+                ],
             },
             indent=2,
             sort_keys=True,
@@ -214,6 +327,30 @@ def main() -> int:
             )
         )
         validate_managed_release_evidence(evidence)
+        candidate = str(evidence["candidate_commit"])
+        ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", candidate, target],
+            cwd=repo,
+            check=False,
+        )
+        if ancestor.returncode != 0:
+            raise ReleaseError("managed candidate commit is not an ancestor of the release target")
+        expected_hashes = {
+            "bundle_hash": hashlib.sha256(
+                _blob(repo, target, "infra/databricks/reliability_reference/databricks.yml")
+            ).hexdigest(),
+            "fixture_manifest_hash": _fixture_manifest_hash(repo, target),
+            "claim_ledger_hash": hashlib.sha256(
+                _blob(
+                    repo,
+                    target,
+                    "docs/reliability-reference/releases/0.3.0/claim-ledger.json",
+                )
+            ).hexdigest(),
+        }
+        for field, expected in expected_hashes.items():
+            if evidence[field] != expected:
+                raise ReleaseError(f"managed evidence {field} does not match the release tree")
     build_release(repo, target, args.version, args.managed_result, args.output)
     return 0
 

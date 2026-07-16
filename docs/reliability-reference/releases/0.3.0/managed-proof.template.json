@@ -1,7 +1,7 @@
 {
   "result": "PENDING",
   "baseline_commit": "45125f1e064f28ce03ef7e0f15acceb18c34604f",
-  "candidate_commit": "d33bbe5",
+  "candidate_commit": "d33bbe59048d6471483a0d1424869ae2bde1ef59",
   "cli_version": "1.8.0",
   "serverless_environment_version": "2",
   "managed_attempts": 0,
@@ -10,9 +10,10 @@
   "reason_code": "owner_authentication_pending",
   "bundle_hash": null,
   "fixture_manifest_hash": null,
+  "claim_ledger_hash": null,
   "scenario_results": [],
   "portable_comparison": null,
-  "delta_history": [],
+  "delta_history": {},
   "resource_inventory_before": [],
   "resource_inventory_after": [],
   "teardown": {

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .compare import compare_results
-from .constants import CONTRACT_VERSION, SCENARIO_ROOT, VERSION
+from .constants import CONTRACT_VERSION, MANAGED_SCENARIOS, SCENARIO_ROOT, VERSION
 from .contracts import ContractError, load_json, validate_fixture_pack
 from .oracle import assert_expected, validate_oracle
 from .runner import run_case
@@ -140,19 +140,37 @@ def compare_managed(reference_output: Path, managed_output: Path, output: Path) 
     }
     managed_results = {path.name: path for path in (managed_output / "results").glob("*.json")}
     scenarios = []
-    for name, managed_path in sorted(managed_results.items()):
+    required_names = [f"{name}.json" for name in MANAGED_SCENARIOS]
+    for name in required_names:
+        if name not in managed_results:
+            scenarios.append(
+                {
+                    "case_id": Path(name).stem,
+                    "result": "FAIL",
+                    "missing_managed_result": True,
+                }
+            )
+            continue
         if name not in reference_results:
             scenarios.append(
                 {
                     "case_id": Path(name).stem,
                     "result": "FAIL",
-                    "missing_engine_result": "duckdb",
+                    "missing_reference_result": True,
                 }
             )
             continue
         expected = load_json(reference_results[name])
-        actual = load_json(managed_path)
+        actual = load_json(managed_results[name])
         scenarios.append({"case_id": expected["case_id"], **compare_results(expected, actual)})
+    for name in sorted(set(managed_results) - set(required_names)):
+        scenarios.append(
+            {
+                "case_id": Path(name).stem,
+                "result": "FAIL",
+                "unexpected_managed_result": True,
+            }
+        )
     passed = bool(scenarios) and all(item["result"] == "PASS" for item in scenarios)
     report = {
         "result": "PASS" if passed else "FAIL",

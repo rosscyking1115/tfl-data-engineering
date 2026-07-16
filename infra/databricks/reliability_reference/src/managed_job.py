@@ -21,14 +21,15 @@ def _repo_root() -> Path:
 REPO_ROOT = _repo_root()
 sys.path.insert(0, str(REPO_ROOT))
 
+from benchmark.reliability_reference.constants import MANAGED_SCENARIOS  # noqa: E402
 from benchmark.reliability_reference.delta_runner import (  # noqa: E402
-    MANAGED_SCENARIOS,
     DeltaStateStore,
     run_managed_case,
 )
 from benchmark.reliability_reference.managed_evidence import (  # noqa: E402
     redact_evidence,
     resource_names,
+    validate_managed_scenario_results,
 )
 
 SCENARIO_ROOT = REPO_ROOT / "benchmark" / "reliability_reference" / "scenarios"
@@ -111,23 +112,13 @@ def run(spark: Any, *, catalog: str, schema: str, volume: str, run_scope: str) -
         _write_json(output / "results" / f"{scenario_name}.json", result.to_dict())
         results.append({"scenario": scenario_name, "result": result.to_dict()})
 
-    clean = next(item["result"] for item in results if item.get("scenario") == "009_full_rebuild")
-    uninterrupted = next(
-        item["result"] for item in results if item.get("scenario") == "008_interrupted_publish"
-    )
-    retries_match = all(
-        item["retry"]["state_hash"] == clean["state_hash"]
-        and item["retry"]["canonical_rows"] == clean["canonical_rows"]
-        for item in results
-        if "retry" in item
-    )
+    gate = validate_managed_scenario_results(results)
     report = {
-        "result": "PASS"
-        if retries_match and uninterrupted["state_hash"] == clean["state_hash"]
-        else "FAIL",
+        "result": "PASS",
         "run_scope": run_scope,
         "scenario_count": len(MANAGED_SCENARIOS),
         "fault_hooks": list(FAULTS),
+        "oracle_gate": gate,
         "results": results,
         "delta_history": _history(spark, DeltaStateStore(spark, catalog, schema, run_scope)),
     }
