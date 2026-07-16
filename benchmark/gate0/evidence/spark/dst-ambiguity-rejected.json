@@ -1,0 +1,21 @@
+{
+  "case_id": "dst-ambiguity-rejected",
+  "engine": "spark",
+  "canonical_rows": [],
+  "reconciliation": [
+    {
+      "object_id": "fixture/nextgen-dst-ambiguous",
+      "content_sha256": "acf97cc0fe04088bf572907127c30ca36cc4386d277e8cb74926de98197a5378",
+      "header_variant_id": "sha256:bd7b2ebb5148dca5b4b4bce591d0a9acc062c9e3df6cc7eb92530a083c78e7e5",
+      "state_hash_before": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "removed_rows": 0,
+      "action": "rejected",
+      "input_rows": 1,
+      "accepted_rows": 0,
+      "rejected_rows": 1,
+      "reason": "start_ts: ambiguous Europe/London local time '2025-10-26 01:15'",
+      "state_hash_after": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "state_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+}

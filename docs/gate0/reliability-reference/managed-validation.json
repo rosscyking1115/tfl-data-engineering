@@ -1,0 +1,13 @@
+{
+  "observed_at_utc": "2026-07-16T00:35:00+00:00",
+  "scope": "validate-only",
+  "cli_present": false,
+  "local_profile_present": false,
+  "bundle_schema_run": false,
+  "bundle_validate_run": false,
+  "authenticated_validation": false,
+  "remote_resources_created": false,
+  "remote_commands_run": [],
+  "result": "NARROW — unverified",
+  "reason": "No Databricks CLI or local profile was available; portable Gate 0 remains independent."
+}

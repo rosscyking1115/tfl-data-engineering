@@ -1,0 +1,4 @@
+# Gate 0 fixture and evidence hashes are byte-level contracts. Keep their bytes stable
+# across Windows and Linux checkouts.
+benchmark/gate0/** text eol=lf
+docs/gate0/reliability-reference/** text eol=lf

@@ -1,0 +1,23 @@
+bundle:
+  name: tfl-reliability-gate0
+
+databricks_cli_version: ">= 0.218.0"
+
+resources:
+  jobs:
+    reliability_gate0_probe:
+      name: tfl-reliability-gate0-validate-only
+      tasks:
+        - task_key: validate_portable_artifacts
+          spark_python_task:
+            python_file: ./managed_probe.py
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
+targets:
+  validate_only:
+    default: true
+    mode: development
