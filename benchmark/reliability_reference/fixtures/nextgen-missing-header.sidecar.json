@@ -1,0 +1,15 @@
+{
+  "object_id": "fixture/nextgen-missing-header",
+  "file": "nextgen-missing-header.csv",
+  "fixture_kind": "constructed",
+  "evidence_basis": "constructed_compatibility_case",
+  "schema_family": null,
+  "variant_key": null,
+  "header_variant_id": "sha256:161cf649d769175620af429ce4d414b0c7d5ba69e6bee57875fcbec852877bf4",
+  "content_sha256": "c55e0393cc6c9fc05cea5ff98a833b17095fab5b908f7435fa0c8e207525f53b",
+  "ownership_period": {"start": "2026-03-01", "end": "2026-03-01"},
+  "expected_source_rows": 1,
+  "supersedes_object_id": null,
+  "publication_decision": "publish_constructed",
+  "expected_disposition": "reject"
+}

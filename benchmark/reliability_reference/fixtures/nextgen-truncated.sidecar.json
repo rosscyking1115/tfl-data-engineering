@@ -1,0 +1,15 @@
+{
+  "object_id": "fixture/nextgen-truncated",
+  "file": "nextgen-truncated.csv",
+  "fixture_kind": "constructed",
+  "evidence_basis": "constructed_validation_case",
+  "schema_family": "nextgen",
+  "variant_key": "nextgen_standard",
+  "header_variant_id": "sha256:bd7b2ebb5148dca5b4b4bce591d0a9acc062c9e3df6cc7eb92530a083c78e7e5",
+  "content_sha256": "84255fcabe3a24a1bfad79383d82d27aa44591398fe8c6b6ac01131f1e55f670",
+  "ownership_period": {"start": "2026-03-01", "end": "2026-03-01"},
+  "expected_source_rows": 2,
+  "supersedes_object_id": null,
+  "publication_decision": "publish_constructed",
+  "expected_disposition": "reject"
+}

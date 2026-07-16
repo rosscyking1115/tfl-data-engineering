@@ -1,0 +1,38 @@
+[
+  {
+    "bike_id": "601",
+    "bike_model": "CLASSIC",
+    "duration_ms": 720000,
+    "end_station_code": "001030",
+    "end_station_name": "Constructed End C",
+    "end_ts_local": "2026-01-01T08:12:00+00:00",
+    "header_variant_id": "sha256:bd7b2ebb5148dca5b4b4bce591d0a9acc062c9e3df6cc7eb92530a083c78e7e5",
+    "ownership_end": "2026-01-02",
+    "ownership_start": "2026-01-01",
+    "rental_id": "2001",
+    "schema_family": "nextgen",
+    "source_object_id": "fixture/nextgen-standard",
+    "source_timezone": "Europe/London",
+    "start_station_code": "001020",
+    "start_station_name": "Constructed Start C",
+    "start_ts_local": "2026-01-01T08:00:00+00:00"
+  },
+  {
+    "bike_id": "602",
+    "bike_model": "PBSC_EBIKE",
+    "duration_ms": 300000,
+    "end_station_code": "001031",
+    "end_station_name": "Constructed End D",
+    "end_ts_local": "2026-01-02T09:05:00+00:00",
+    "header_variant_id": "sha256:bd7b2ebb5148dca5b4b4bce591d0a9acc062c9e3df6cc7eb92530a083c78e7e5",
+    "ownership_end": "2026-01-02",
+    "ownership_start": "2026-01-01",
+    "rental_id": "2002",
+    "schema_family": "nextgen",
+    "source_object_id": "fixture/nextgen-standard",
+    "source_timezone": "Europe/London",
+    "start_station_code": "001021",
+    "start_station_name": "Constructed Start D",
+    "start_ts_local": "2026-01-02T09:00:00+00:00"
+  }
+]

@@ -2,3 +2,5 @@
 # across Windows and Linux checkouts.
 benchmark/gate0/** text eol=lf
 docs/gate0/reliability-reference/** text eol=lf
+benchmark/reliability_reference/** text eol=lf
+docs/reliability-reference/** text eol=lf

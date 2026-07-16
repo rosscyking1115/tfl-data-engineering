@@ -1,0 +1,15 @@
+{
+  "object_id": "fixture/nextgen-invalid-duration",
+  "file": "nextgen-invalid-duration.csv",
+  "fixture_kind": "constructed",
+  "evidence_basis": "constructed_validation_case",
+  "schema_family": "nextgen",
+  "variant_key": "nextgen_standard",
+  "header_variant_id": "sha256:bd7b2ebb5148dca5b4b4bce591d0a9acc062c9e3df6cc7eb92530a083c78e7e5",
+  "content_sha256": "72295679ff399240943378c99b94c7e07ede5a62afd25c2a387c9c9d09c85251",
+  "ownership_period": {"start": "2026-03-01", "end": "2026-03-01"},
+  "expected_source_rows": 1,
+  "supersedes_object_id": null,
+  "publication_decision": "publish_constructed",
+  "expected_disposition": "reject"
+}

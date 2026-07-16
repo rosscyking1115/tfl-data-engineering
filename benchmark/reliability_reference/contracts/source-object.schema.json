@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "source-object.schema.json",
+  "type": "object",
+  "required": ["object_id", "file", "fixture_kind", "evidence_basis", "content_sha256", "header_variant_id", "ownership_period", "expected_source_rows", "supersedes_object_id", "publication_decision", "expected_disposition"],
+  "properties": {
+    "object_id": {"type": "string", "minLength": 1},
+    "file": {"type": "string", "pattern": "^[^/\\\\]+\\.csv$"},
+    "fixture_kind": {"const": "constructed"},
+    "evidence_basis": {"type": "string", "minLength": 1},
+    "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "header_variant_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "ownership_period": {"type": "object", "required": ["start", "end"]},
+    "expected_source_rows": {"type": "integer", "minimum": 0},
+    "supersedes_object_id": {"type": ["string", "null"]},
+    "publication_decision": {"const": "publish_constructed"},
+    "expected_disposition": {"enum": ["accept", "replace", "reject"]}
+  },
+  "additionalProperties": true
+}

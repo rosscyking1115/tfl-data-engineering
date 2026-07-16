@@ -1,0 +1,16 @@
+{
+  "case_id": "007_invalid_objects",
+  "contract_version": "1",
+  "evidence_basis": "observed_condition_and_constructed_failures",
+  "operations": [
+    {"action": "ingest", "object_ref": "nextgen-standard.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-overlap.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-duplicate-identity.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-unknown-extra.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-missing-header.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-invalid-duration.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-truncated.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-out-of-period.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-dst-ambiguous.sidecar.json"}
+  ]
+}

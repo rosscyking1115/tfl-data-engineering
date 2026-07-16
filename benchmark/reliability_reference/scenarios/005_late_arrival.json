@@ -1,0 +1,9 @@
+{
+  "case_id": "005_late_arrival",
+  "contract_version": "1",
+  "evidence_basis": "constructed",
+  "operations": [
+    {"action": "ingest", "object_ref": "nextgen-new-period.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-standard.sidecar.json"}
+  ]
+}

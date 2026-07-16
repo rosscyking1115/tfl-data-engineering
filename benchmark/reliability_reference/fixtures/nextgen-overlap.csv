@@ -1,0 +1,2 @@
+Number,Start date,Start station number,Start station,End date,End station number,End station,Bike number,Bike model,Total duration,Total duration (ms)
+2098,2026-01-02 14:00,001060,Constructed Start Overlap,2026-01-02 14:05,001061,Constructed End Overlap,698,CLASSIC,5m,300000

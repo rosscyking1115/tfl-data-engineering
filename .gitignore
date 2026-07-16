@@ -9,6 +9,7 @@ data/
 __pycache__/
 *.pyc
 .pytest_cache/
+.benchmark-output/
 
 # dbt
 dbt/target/

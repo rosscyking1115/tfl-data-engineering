@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical-journey.schema.json",
+  "type": "object",
+  "required": ["schema_family", "header_variant_id", "rental_id", "bike_id", "start_ts_local", "end_ts_local", "source_timezone", "duration_ms", "source_object_id", "ownership_start", "ownership_end"],
+  "properties": {
+    "schema_family": {"enum": ["classic", "nextgen"]},
+    "header_variant_id": {"type": "string"},
+    "rental_id": {"type": "string"},
+    "bike_id": {"type": "string"},
+    "bike_model": {"type": ["string", "null"]},
+    "start_ts_local": {"type": "string"},
+    "end_ts_local": {"type": "string"},
+    "source_timezone": {"const": "Europe/London"},
+    "duration_ms": {"type": "integer", "minimum": 1},
+    "start_station_code": {"type": ["string", "null"]},
+    "start_station_name": {"type": ["string", "null"]},
+    "end_station_code": {"type": ["string", "null"]},
+    "end_station_name": {"type": ["string", "null"]},
+    "source_object_id": {"type": "string"},
+    "ownership_start": {"type": "string", "format": "date"},
+    "ownership_end": {"type": "string", "format": "date"}
+  },
+  "additionalProperties": false
+}

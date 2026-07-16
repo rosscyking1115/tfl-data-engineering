@@ -1,0 +1,10 @@
+{
+  "case_id": "006_header_compatibility",
+  "contract_version": "1",
+  "evidence_basis": "observed_and_constructed",
+  "operations": [
+    {"action": "ingest", "object_ref": "nextgen-station-names-first.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-unknown-extra.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-missing-header.sidecar.json"}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "case_id": "001_initial_variants",
+  "contract_version": "1",
+  "evidence_basis": "observed_header_variants_with_constructed_rows",
+  "operations": [
+    {"action": "ingest", "object_ref": "classic-standard.sidecar.json"},
+    {"action": "ingest", "object_ref": "classic-missing-end-station-id.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-standard.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-station-names-first.sidecar.json"},
+    {"action": "ingest", "object_ref": "nextgen-interleaved.sidecar.json"}
+  ]
+}
