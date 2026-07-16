@@ -12,7 +12,7 @@ loudly (never silent mis-parsing). Verified against primary docs + observed payl
 | Auth / limits | None (open data). Bulk HTTP GET. |
 | Cadence | New extract every ~2 weeks, covering a start-date window, published with a **~1–2 month lag**. Filename: `NNNJourneyDataExtractDDMmmYYYY-DDMmmYYYY.csv`. |
 | Schema (nextgen era) | `Number, Start date, End date, Bike number, Bike model, Total duration (ms), Start station number, Start station, End station number, End station` |
-| Known quirks | Cross-year schema drift (5 header variants historically — see ADR-0002); duplicate `Number`s across overlapping extracts; boundary days published partially then re-covered by the next extract; rides ending after the window's last start date. |
+| Known quirks | Cross-year schema drift (5 ordered-header variants verified across the 148 retained files — see ADR-0002); boundary spill/re-coverage can occur; rides can end after the filename window. The 2022–May 2026 backfill found **zero** overlapping rental IDs. Duplicate object replay remains a constructed guard pending genuine older-source evidence, not an observed incident in that window. |
 | We depend on | The 10 nextgen columns above by **name** (`REQUIRED_COLUMNS` in [journey_increment.py](../ingestion/journey_increment.py)); the filename date pattern for the watermark. |
 | Breakage surfaces as | The **schema gate** (`SystemExit: schema gate`) or the filename regex matching nothing (increment reports up-to-date while the coverage/freshness layer flags stalling journeys). |
 

@@ -1,0 +1,16 @@
+{
+  "historical_snapshot": {
+    "path": "docs/gate0/cycle_file_inventory.csv",
+    "object_count": 482,
+    "latest_object_last_modified": "2026-06-09T13:50:19.000Z",
+    "interpretation": "retained historical metadata snapshot; not a current bucket count"
+  },
+  "refreshed_snapshot": {
+    "observed_at_utc": "2026-07-16T00:29:19+00:00",
+    "object_count": 482,
+    "latest_object_last_modified": "2026-06-09T13:50:19.000Z"
+  },
+  "added_keys": [],
+  "removed_keys": [],
+  "metadata_changed_keys": []
+}

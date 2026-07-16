@@ -1,0 +1,3 @@
+Number,Start date,Start station number,Start station,End date,End station number,End station,Bike number,Bike model,Total duration,Total duration (ms)
+2001,2026-01-01 08:00,001020,Constructed Start C,2026-01-01 08:15,001030,Constructed End C,601,CLASSIC,15m 0s,900000
+2005,2026-01-02 12:00,001024,Constructed Start G,2026-01-02 12:06,001034,Constructed End G,605,CLASSIC,6m 0s,360000

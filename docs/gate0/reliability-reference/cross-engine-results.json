@@ -1,0 +1,39 @@
+{
+  "observed_at_utc": "2026-07-16T00:33:56+00:00",
+  "duckdb_version": "1.5.4",
+  "spark_image": "apache/spark:4.0.1-java21-python3",
+  "declared_comparison": "ordered canonical rows, reconciliation, and state hash",
+  "result": "PASS",
+  "cases": [
+    {
+      "case_id": "normalize-five-variants",
+      "duckdb_state_hash": "sha256:a3db2222b3a9b3d37927a1d14112a5034bb76804bf6359565a1b7ead6f5a472c",
+      "spark_state_hash": "sha256:a3db2222b3a9b3d37927a1d14112a5034bb76804bf6359565a1b7ead6f5a472c",
+      "semantic_match": true
+    },
+    {
+      "case_id": "duplicate-replay",
+      "duckdb_state_hash": "sha256:48d7e8302fbe46598b3501ea1135f360507b86bbf66639c2f1937b682dc3bd01",
+      "spark_state_hash": "sha256:48d7e8302fbe46598b3501ea1135f360507b86bbf66639c2f1937b682dc3bd01",
+      "semantic_match": true
+    },
+    {
+      "case_id": "correction-replaces-period",
+      "duckdb_state_hash": "sha256:8e856850d4cceb6083ea7bcd867972cb833e88f0f66214b585c15eb4c0b21c1a",
+      "spark_state_hash": "sha256:8e856850d4cceb6083ea7bcd867972cb833e88f0f66214b585c15eb4c0b21c1a",
+      "semantic_match": true
+    },
+    {
+      "case_id": "incompatible-preserves-state",
+      "duckdb_state_hash": "sha256:48d7e8302fbe46598b3501ea1135f360507b86bbf66639c2f1937b682dc3bd01",
+      "spark_state_hash": "sha256:48d7e8302fbe46598b3501ea1135f360507b86bbf66639c2f1937b682dc3bd01",
+      "semantic_match": true
+    },
+    {
+      "case_id": "dst-ambiguity-rejected",
+      "duckdb_state_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "spark_state_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "semantic_match": true
+    }
+  ]
+}

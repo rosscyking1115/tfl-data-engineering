@@ -1,0 +1,71 @@
+{
+  "contract_version": "0.1.0",
+  "canonical_timezone": "Europe/London",
+  "canonical_timestamp_policy": "offset-aware local time; ambiguous or nonexistent source times are rejected; UTC is not derived in Gate 0",
+  "duration_unit": "milliseconds",
+  "identifier_type": "string",
+  "null_policy": "empty source values normalize to null",
+  "header_fingerprint": "sha256 of compact UTF-8 JSON array of parsed ordered field names",
+  "variants": [
+    {
+      "variant_key": "classic_standard",
+      "schema_family": "classic",
+      "observed_file_count": 36,
+      "headers": ["Rental Id", "Duration", "Bike Id", "End Date", "EndStation Id", "EndStation Name", "Start Date", "StartStation Id", "StartStation Name"]
+    },
+    {
+      "variant_key": "classic_missing_end_station_id",
+      "schema_family": "classic",
+      "observed_file_count": 1,
+      "headers": ["Rental Id", "Duration", "Bike Id", "End Date", "EndStation Name", "Start Date", "StartStation Id", "StartStation Name"]
+    },
+    {
+      "variant_key": "nextgen_standard",
+      "schema_family": "nextgen",
+      "observed_file_count": 100,
+      "headers": ["Number", "Start date", "Start station number", "Start station", "End date", "End station number", "End station", "Bike number", "Bike model", "Total duration", "Total duration (ms)"]
+    },
+    {
+      "variant_key": "nextgen_station_names_first",
+      "schema_family": "nextgen",
+      "observed_file_count": 8,
+      "headers": ["Number", "Start date", "Start station", "Start station number", "End date", "End station", "End station number", "Bike number", "Bike model", "Total duration", "Total duration (ms)"]
+    },
+    {
+      "variant_key": "nextgen_interleaved_station_order",
+      "schema_family": "nextgen",
+      "observed_file_count": 3,
+      "headers": ["Number", "Start date", "Start station number", "End date", "End station", "End station number", "Start station", "Bike number", "Bike model", "Total duration", "Total duration (ms)"]
+    }
+  ],
+  "field_mappings": {
+    "classic": {
+      "rental_id": "Rental Id",
+      "bike_id": "Bike Id",
+      "bike_model": null,
+      "start_ts": "Start Date",
+      "end_ts": "End Date",
+      "duration": "Duration",
+      "duration_multiplier": 1000,
+      "start_station_code": "StartStation Id",
+      "start_station_name": "StartStation Name",
+      "end_station_code": "EndStation Id",
+      "end_station_name": "EndStation Name",
+      "timestamp_formats": ["%d/%m/%Y %H:%M"]
+    },
+    "nextgen": {
+      "rental_id": "Number",
+      "bike_id": "Bike number",
+      "bike_model": "Bike model",
+      "start_ts": "Start date",
+      "end_ts": "End date",
+      "duration": "Total duration (ms)",
+      "duration_multiplier": 1,
+      "start_station_code": "Start station number",
+      "start_station_name": "Start station",
+      "end_station_code": "End station number",
+      "end_station_name": "End station",
+      "timestamp_formats": ["%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"]
+    }
+  }
+}

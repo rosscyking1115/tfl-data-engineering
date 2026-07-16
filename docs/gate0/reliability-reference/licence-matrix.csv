@@ -1,0 +1,10 @@
+artifact_class,source_content,evidence_class,publication_decision,licence_basis,required_notice,status
+Python and PowerShell code,None,constructed,publish,Repository MIT licence,None,allowed
+Schema mapping,Ordered source field names plus original mapping,derived,publish_metadata_only,TfL Transport Data Service terms subject to archive coverage caution,TfL + OS + Geomni attribution and non-endorsement,allowed_with_attribution
+Constructed fixture rows,Synthetic values using observed header structures,constructed,publish_constructed,CC0 dedication for original fixture values; third-party rights unaffected,TfL + OS + Geomni attribution and non-endorsement,allowed_with_attribution
+Expected canonical outputs,Derived only from constructed fixtures,constructed,publish_constructed,CC0 dedication for original fixture values; third-party rights unaffected,TfL + OS + Geomni attribution and non-endorsement,allowed_with_attribution
+Current S3 listing metadata,Object key size and last-modified only,observed,publish_metadata_only,TfL Transport Data Service terms,TfL + OS + Geomni attribution and non-endorsement,allowed_with_attribution
+Local source hashes and reconciliation counts,One-way hashes and aggregate counts; no source bytes,derived,publish_metadata_only,TfL Transport Data Service terms,TfL + OS + Geomni attribution and non-endorsement,allowed_with_attribution
+Raw TfL journey rows or byte excerpts,Source bytes,observed,do_not_publish,Public S3 archive coverage by the registered Transport Data Service licence was not proven in Gate 0,N/A,blocked
+Santander Cycles website content,Website content,observed,do_not_extract,TfL terms prohibit automated extraction absent written permission,N/A,blocked
+Databricks documentation facts,Short paraphrases and links,derived,publish_reference,Databricks documentation terms; no copied corpus,Link to official documentation,allowed

@@ -1,0 +1,67 @@
+{
+  "case_id": "duplicate-replay",
+  "engine": "duckdb",
+  "canonical_rows": [
+    {
+      "schema_family": "nextgen",
+      "header_variant_id": "sha256:bd7b2ebb5148dca5b4b4bce591d0a9acc062c9e3df6cc7eb92530a083c78e7e5",
+      "rental_id": "2001",
+      "bike_id": "601",
+      "bike_model": "CLASSIC",
+      "start_ts_local": "2026-01-01T08:00:00+00:00",
+      "end_ts_local": "2026-01-01T08:12:00+00:00",
+      "source_timezone": "Europe/London",
+      "duration_ms": 720000,
+      "start_station_code": "001020",
+      "start_station_name": "Constructed Start C",
+      "end_station_code": "001030",
+      "end_station_name": "Constructed End C",
+      "source_object_id": "fixture/nextgen-standard"
+    },
+    {
+      "schema_family": "nextgen",
+      "header_variant_id": "sha256:bd7b2ebb5148dca5b4b4bce591d0a9acc062c9e3df6cc7eb92530a083c78e7e5",
+      "rental_id": "2002",
+      "bike_id": "602",
+      "bike_model": "PBSC_EBIKE",
+      "start_ts_local": "2026-01-02T09:00:00+00:00",
+      "end_ts_local": "2026-01-02T09:05:00+00:00",
+      "source_timezone": "Europe/London",
+      "duration_ms": 300000,
+      "start_station_code": "001021",
+      "start_station_name": "Constructed Start D",
+      "end_station_code": "001031",
+      "end_station_name": "Constructed End D",
+      "source_object_id": "fixture/nextgen-standard"
+    }
+  ],
+  "reconciliation": [
+    {
+      "object_id": "fixture/nextgen-standard",
+      "content_sha256": "31f9acff08ecf154d7a358d1237c27443c33e30c71b60bf3d562d04bbe7e3c99",
+      "header_variant_id": "sha256:bd7b2ebb5148dca5b4b4bce591d0a9acc062c9e3df6cc7eb92530a083c78e7e5",
+      "state_hash_before": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "removed_rows": 0,
+      "action": "applied",
+      "input_rows": 2,
+      "accepted_rows": 2,
+      "rejected_rows": 0,
+      "reason": "",
+      "state_hash_after": "sha256:48d7e8302fbe46598b3501ea1135f360507b86bbf66639c2f1937b682dc3bd01"
+    },
+    {
+      "object_id": "fixture/nextgen-standard",
+      "content_sha256": "31f9acff08ecf154d7a358d1237c27443c33e30c71b60bf3d562d04bbe7e3c99",
+      "header_variant_id": "sha256:bd7b2ebb5148dca5b4b4bce591d0a9acc062c9e3df6cc7eb92530a083c78e7e5",
+      "state_hash_before": "sha256:48d7e8302fbe46598b3501ea1135f360507b86bbf66639c2f1937b682dc3bd01",
+      "removed_rows": 0,
+      "action": "duplicate",
+      "input_rows": 0,
+      "accepted_rows": 0,
+      "rejected_rows": 0,
+      "reason": "exact content hash already applied",
+      "state_hash_after": "sha256:48d7e8302fbe46598b3501ea1135f360507b86bbf66639c2f1937b682dc3bd01"
+    }
+  ],
+  "state_hash": "sha256:48d7e8302fbe46598b3501ea1135f360507b86bbf66639c2f1937b682dc3bd01"
+}
