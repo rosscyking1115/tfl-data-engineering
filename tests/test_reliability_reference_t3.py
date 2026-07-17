@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import zipfile
 from pathlib import Path
@@ -165,8 +166,11 @@ def test_bundle_is_serverless_scoped_and_never_syncs_application_state():
     assert "existing_cluster_id:" not in rendered
     assert "app/gold_export" not in rendered
     assert "ingestion/" not in rendered
-    assert "benchmark/reliability_reference/fixtures" in rendered
+    assert "../../../benchmark/reliability_reference" in rendered
+    assert "sync:\n  paths:" in rendered
+    assert "  include:" not in rendered
     assert "tfl_reliability_t3_${var.run_suffix}" in rendered
+    assert "mode: development" not in rendered
     assert "paths:" in rendered
     assert "--run-scope" in rendered
 
@@ -207,12 +211,31 @@ def test_cleanup_targets_only_the_five_uniquely_scoped_delta_tables():
 def test_managed_job_contains_no_application_or_live_snapshot_paths():
     job = ROOT / "infra" / "databricks" / "reliability_reference" / "src" / "managed_job.py"
     cleanup = job.with_name("cleanup_job.py")
+    adapter = ROOT / "benchmark" / "reliability_reference" / "delta_adapter.py"
     rendered = job.read_text(encoding="utf-8") + cleanup.read_text(encoding="utf-8")
+    adapter_source = adapter.read_text(encoding="utf-8")
 
     assert "app/gold_export" not in rendered
     assert "live_" not in rendered
     assert "MANAGED_SCENARIOS" in rendered
     assert "cleanup_statements" in rendered
+    assert "spark.createDataFrame" in adapter_source
+    assert "spark.read" not in adapter_source
+
+
+@pytest.mark.parametrize("script_name", ["managed_job.py", "cleanup_job.py"])
+def test_managed_scripts_discover_synced_root_without_file_global(
+    monkeypatch: pytest.MonkeyPatch, script_name: str
+):
+    script = ROOT / "infra" / "databricks" / "reliability_reference" / "src" / script_name
+    spec = importlib.util.spec_from_file_location(f"test_{script.stem}", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.delattr(module, "__file__")
+    monkeypatch.chdir(ROOT)
+
+    assert module._repo_root() == ROOT
 
 
 def test_release_policy_falls_back_to_exact_t2_commit_and_blocks_stop():

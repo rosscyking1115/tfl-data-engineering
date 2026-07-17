@@ -10,7 +10,10 @@ from typing import Any
 
 
 def _repo_root() -> Path:
-    starts = [Path(__file__).resolve(), Path.cwd().resolve()]
+    starts = [Path.cwd().resolve()]
+    script_file = globals().get("__file__")
+    if script_file:
+        starts.insert(0, Path(str(script_file)).resolve())
     for start in starts:
         for parent in (start, *start.parents):
             if (parent / "benchmark" / "reliability_reference").is_dir():

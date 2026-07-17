@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -82,19 +83,25 @@ def normalize_object(
     end_source = present("end_ts")
     if start_source is None or end_source is None:
         raise ObjectValidationError("missing_header", "timestamp header is absent")
-    schema = StructType(
-        [
-            StructField(header, LongType() if header == duration_source else StringType(), True)
-            for header in headers
-        ]
-    )
+    schema = StructType([StructField(header, StringType(), True) for header in headers])
     try:
+        with fixture.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.reader(handle, strict=True)
+            parsed_headers = next(reader)
+            if parsed_headers != headers:
+                raise ObjectValidationError(
+                    "header_changed_during_read", "fixture header changed during validation"
+                )
+            raw_rows = []
+            for row_number, row in enumerate(reader, start=2):
+                if len(row) != len(headers):
+                    raise ObjectValidationError(
+                        "malformed_csv",
+                        f"row {row_number} has {len(row)} values; expected {len(headers)}",
+                    )
+                raw_rows.append(tuple(row))
         frame = (
-            spark.read.option("header", True)
-            .option("mode", "FAILFAST")
-            .option("enforceSchema", False)
-            .schema(schema)
-            .csv(str(fixture))
+            spark.createDataFrame(raw_rows, schema=schema)
             .select(
                 text_column(present("rental_id"), "rental_id"),
                 text_column(present("bike_id"), "bike_id"),
@@ -107,7 +114,7 @@ def normalize_object(
                 text_column(end_source, "end_ts_source"),
                 parsed_timestamp(start_source, mapping["timestamp_formats"], "start_ts_naive"),
                 parsed_timestamp(end_source, mapping["timestamp_formats"], "end_ts_naive"),
-                (F.col(duration_source) * F.lit(mapping["duration_multiplier"]))
+                (F.col(duration_source).cast(LongType()) * F.lit(mapping["duration_multiplier"]))
                 .cast("long")
                 .alias("duration_ms"),
             )
@@ -141,6 +148,10 @@ def normalize_object(
             row.asDict(recursive=False)
             for row in profiled.withColumn("validation_code", invalid).collect()
         ]
+    except ObjectValidationError:
+        raise
+    except (csv.Error, StopIteration) as error:
+        raise ObjectValidationError("malformed_csv", str(error)) from error
     except Exception as error:
         message = str(error)
         if duration_source in message or "NumberFormatException" in message:

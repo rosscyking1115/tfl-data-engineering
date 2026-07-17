@@ -12,15 +12,6 @@ sync:
   paths:
     - ../../../benchmark/reliability_reference
     - ./src
-  include:
-    - benchmark/reliability_reference/contracts/**
-    - benchmark/reliability_reference/expected/**
-    - benchmark/reliability_reference/fixtures/**
-    - benchmark/reliability_reference/scenarios/**
-    - benchmark/reliability_reference/*.py
-    - infra/databricks/reliability_reference/src/**
-  exclude:
-    - "**/__pycache__/**"
 
 resources:
   schemas:
@@ -77,4 +68,3 @@ resources:
 targets:
   free_edition:
     default: true
-    mode: development
