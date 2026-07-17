@@ -1,6 +1,6 @@
 """Gate 0: measure the real extent of the LAQN historical archive.
 
-Two measurements the handoff doc says are unverified:
+Two measurements that need verifying before the dataset is locked:
 1. Theoretical extent: every (site, species) pair with its date range, from
    /Information/MonitoringSiteSpecies — summed as hourly rows.
 2. Real availability: sample hourly pulls for long-running sites, measuring the

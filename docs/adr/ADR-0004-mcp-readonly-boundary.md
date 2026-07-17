@@ -5,10 +5,9 @@
 
 ## Context
 
-Phase 5 (bonus) exposes the gold layer to an AI client via MCP. The governing plan is
-explicit that this is "an AI-integration demonstration on top of the pipeline, not pipeline
-machinery" (`plan.md:161-174`), and that it must be read-only and scoped to gold. Two
-decisions carried real risk and are recorded here.
+Phase 5 (bonus) exposes the gold layer to an AI client via MCP. This is an AI-integration
+demonstration on top of the pipeline, not pipeline machinery, and it must be read-only and
+scoped to gold. Two decisions carried real risk and are recorded here.
 
 ## Decision 1: the guardrail lives in Snowflake, not in Python
 
