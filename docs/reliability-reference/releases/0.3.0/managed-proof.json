@@ -1,0 +1,97 @@
+{
+  "result": "NARROW",
+  "baseline_commit": "45125f1e064f28ce03ef7e0f15acceb18c34604f",
+  "candidate_commit": "8eafe36b9c2ed7310fd83fbca567ca18fabd6d3a",
+  "cli_version": "1.8.0",
+  "serverless_environment_version": "2",
+  "managed_attempts": 0,
+  "managed_invocations": 3,
+  "corrective_redeploys": 1,
+  "first_deployment_utc": "2026-07-16T23:47:51.1840153Z",
+  "deadline_utc": "2026-07-17T01:47:51.1840153Z",
+  "reason_code": "free_edition_serverless_workspace_file_execution_unavailable",
+  "bundle_hash": "aa7dcc3ab036183849e6c221311ec7c8c109209f17cd94c12aa2b4595b828519",
+  "fixture_manifest_hash": "4609b0d72352e86bad8558c4d5b6d61739ae72d6f37cd5e744519f4a27698fa9",
+  "claim_ledger_hash": "8a1e6e2d9ecb74b5fa43c4fa3eca9e25ed6488d729602759628e3a7f6ec9b13b",
+  "candidate_tree_hash": "c4a5abf25f97cb4afd595bdcc8a07c04c81c447b5d3a58e80b71906a7561208c",
+  "scenario_results": [],
+  "portable_comparison": null,
+  "delta_history": {},
+  "managed_execution": {
+    "scenario_code_started": false,
+    "invocations": [
+      {
+        "attempt": 1,
+        "terminal_state": "INTERNAL_ERROR",
+        "error_class": "workspace_file_input_output_error"
+      },
+      {
+        "attempt": 2,
+        "terminal_state": "INTERNAL_ERROR",
+        "error_class": "workspace_file_input_output_error"
+      },
+      {
+        "attempt": 3,
+        "corrective_candidate": true,
+        "terminal_state": "INTERNAL_ERROR",
+        "error_class": "workspace_file_input_output_error_during_entry_or_module_read"
+      }
+    ],
+    "cleanup": {
+      "attempted": 2,
+      "completed": false,
+      "initial_error_class": "script_wrapper_file_context_unavailable",
+      "corrective_error_class": "workspace_file_input_output_error_during_module_read",
+      "tables_present_before_destroy": 0
+    },
+    "paid_resource_requested": false
+  },
+  "resource_inventory_before": [
+    {
+      "deployment_scope": "initial",
+      "requested_schema_name_matches": 0,
+      "requested_managed_proof_job_matches": 0,
+      "requested_cleanup_job_matches": 0
+    },
+    {
+      "deployment_scope": "corrective",
+      "schema_absent": true,
+      "managed_proof_job_matches": 0,
+      "cleanup_job_matches": 0
+    }
+  ],
+  "resource_inventory_after": [
+    {
+      "deployment_scope": "initial",
+      "schema_absent": true,
+      "managed_proof_job_matches": 0,
+      "cleanup_job_matches": 0,
+      "bundle_artifacts_absent": true
+    },
+    {
+      "deployment_scope": "corrective",
+      "schema_absent": true,
+      "managed_proof_job_matches": 0,
+      "cleanup_job_matches": 0,
+      "bundle_artifacts_absent": true
+    }
+  ],
+  "teardown": {
+    "required": true,
+    "verified": true,
+    "targeted_cleanup_attempted": 2,
+    "targeted_cleanup_completed": false,
+    "bundle_destroy_completed": true,
+    "job_absent": true,
+    "schema_absent": true,
+    "volume_absent": true,
+    "tables_absent": true,
+    "bundle_artifacts_absent": true
+  },
+  "claim_boundary": [
+    "No managed scenario reached the semantic oracle.",
+    "No DuckDB-versus-Delta comparison was produced.",
+    "No Databricks conformance, recovery, performance, reliability, or SLA claim is permitted.",
+    "The portable DuckDB and pinned-Spark 0.2.0 evidence remains authoritative."
+  ]
+}

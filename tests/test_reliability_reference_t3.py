@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import zipfile
@@ -25,6 +26,9 @@ from benchmark.reliability_reference.managed_evidence import (
 from scripts.build_reliability_release import (
     T2_COMMIT,
     ReleaseError,
+    _blob,
+    _fixture_manifest_hash,
+    _tree_manifest_hash,
     build_release,
     validate_managed_release_evidence,
     validate_release_policy,
@@ -329,13 +333,47 @@ def test_claim_ledger_separates_all_evidence_classes_and_forbidden_claims():
     assert prohibited and all(entry["publication"] == "prohibited" for entry in prohibited)
 
 
-def test_pending_managed_template_and_visuals_are_identity_safe():
+def test_terminal_narrow_evidence_template_and_visuals_are_identity_safe():
+    evidence = json.loads((RELEASE_DOCS / "managed-proof.json").read_text(encoding="utf-8"))
+    validate_managed_evidence(evidence)
+    assert evidence["result"] == "NARROW"
+    assert evidence["managed_attempts"] == 0
+    assert evidence["managed_invocations"] == 3
+    assert evidence["corrective_redeploys"] == 1
+    assert evidence["scenario_results"] == []
+    assert evidence["teardown"]["verified"] is True
+    assert all(
+        evidence["teardown"][field] is True
+        for field in (
+            "job_absent",
+            "schema_absent",
+            "volume_absent",
+            "tables_absent",
+            "bundle_artifacts_absent",
+        )
+    )
+    assert redact_evidence(evidence) == evidence
+    candidate = evidence["candidate_commit"]
+    assert evidence["bundle_hash"] == hashlib.sha256(
+        _blob(ROOT, candidate, "infra/databricks/reliability_reference/databricks.yml")
+    ).hexdigest()
+    assert evidence["fixture_manifest_hash"] == _fixture_manifest_hash(ROOT, candidate)
+    assert evidence["candidate_tree_hash"] == _tree_manifest_hash(
+        ROOT,
+        candidate,
+        "benchmark/reliability_reference",
+        "infra/databricks/reliability_reference",
+    )
+    assert evidence["claim_ledger_hash"] == hashlib.sha256(
+        (RELEASE_DOCS / "claim-ledger.json").read_bytes()
+    ).hexdigest()
+
     template = json.loads(
         (RELEASE_DOCS / "managed-proof.template.json").read_text(encoding="utf-8")
     )
     assert template["result"] == "PENDING"
     assert template["managed_attempts"] == 0
-    rendered = json.dumps(template)
+    rendered = json.dumps({"evidence": evidence, "template": template})
     assert "@" not in rendered
     assert ".cloud.databricks.com" not in rendered
     assert "dapi" not in rendered

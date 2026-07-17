@@ -210,9 +210,10 @@ constructed fixtures and a reviewed JSON oracle to prove replay, replacement, co
 rejection, and interruption recovery across DuckDB and digest-pinned Spark. It does not import
 application state or alter the living workflow.
 
-T3 adds a bounded, temporary Databricks Delta proof candidate. The managed lane is currently
-**pending owner authentication**; no managed conformance claim is made unless its redacted report
-records `PASS` and verified teardown. DuckDB/Spark `0.2.0` remains the authoritative proven suite.
+T3 attempted a bounded, temporary Databricks Delta proof. The managed gate ended **NARROW** after
+the initial and one allowed corrective deployment could not reliably read workspace Python files;
+zero complete managed attempts reached the semantic oracle. Teardown is independently verified,
+no managed conformance claim is made, and DuckDB/Spark `0.2.0` remains authoritative.
 
 [![Portable-to-managed recovery flow](docs/reliability-reference/releases/0.3.0/portable-managed-recovery.svg)](docs/reliability-reference/releases/0.3.0/README.md)
 

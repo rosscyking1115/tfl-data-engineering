@@ -22,6 +22,11 @@
       "publication": "permitted"
     },
     {
+      "classification": "observed",
+      "claim": "Three bounded Free Edition job invocations across the initial and one corrective deployment produced zero complete managed attempts because workspace Python files could not be read reliably; teardown was independently verified.",
+      "publication": "permitted_without_workspace_identity"
+    },
+    {
       "classification": "derived",
       "claim": "A bounded serverless Delta execution matches the portable oracle and preserves pointer invariants.",
       "publication": "permitted_only_after_managed_pass"

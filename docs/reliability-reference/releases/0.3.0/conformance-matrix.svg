@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
   <title id="title">Reliability-reference conformance matrix</title>
-  <desc id="desc">DuckDB and pinned Spark pass the portable suite. Delta is pending owner authentication and cannot support a claim yet.</desc>
+  <desc id="desc">DuckDB and pinned Spark pass the portable suite. The bounded Delta lane ended NARROW before reaching the semantic oracle.</desc>
   <rect width="1200" height="520" fill="#07111f"/>
   <text x="64" y="66" fill="#f4f7fb" font-family="system-ui, sans-serif" font-size="30" font-weight="700">Conformance matrix</text>
   <text x="64" y="99" fill="#9fb1c7" font-family="system-ui, sans-serif" font-size="16">Candidate state · managed evidence is not inferred from portable results</text>
@@ -24,9 +24,9 @@
     <text x="966" y="345" fill="#57e0d2" font-size="15" font-weight="700">PASS</text>
     <rect x="64" y="388" width="1072" height="72" rx="10" fill="#0d1d30"/>
     <text x="90" y="430" fill="#f4f7fb" font-size="19">Delta serverless</text>
-    <text x="380" y="430" fill="#f6b94a" font-size="17">Independent DataFrame</text>
-    <text x="650" y="430" fill="#9fb1c7" font-size="17">Not executed</text>
+    <text x="380" y="430" fill="#f6b94a" font-size="17">Task could not start</text>
+    <text x="650" y="430" fill="#9fb1c7" font-size="17">Oracle not reached</text>
     <rect x="930" y="407" width="136" height="36" rx="18" fill="#4a3512"/>
-    <text x="950" y="431" fill="#ffd27a" font-size="15" font-weight="700">PENDING</text>
+    <text x="958" y="431" fill="#ffd27a" font-size="15" font-weight="700">NARROW</text>
   </g>
 </svg>
