@@ -1,8 +1,8 @@
 # Project rules
 
 > **Direction changed (2026-07-08, ADR-0006):** this evolved from a one-off DE pipeline
-> into a **living disruption-aware cycling-demand workflow**. The original build plan is
-> kept for history at `docs/tfl-data-engineering-plan.md`; the rules below now govern.
+> into a **living disruption-aware cycling-demand workflow**. That history is recorded in
+> [ADR-0006](docs/adr/ADR-0006-pivot-to-live-disruption-workflow.md); the rules below now govern.
 
 - **Still not commercial:** no users, no accounts, no auth, no billing. It's a
   genuinely-running portfolio workflow, not a product to sell.
