@@ -14,7 +14,7 @@ Rules inherited from the discussion:
 - No users, no accounts, no product framing, no streaming theatre.
 - Every tool used only where the data justifies it, with the "why-not" written down —
   the documented restraint is worth as much as the tool use.
-- This project deliberately carries Snowflake + Spark; movein/aerospace deliberately do NOT.
+- This project deliberately carries Snowflake + Spark; the housing and aerospace projects deliberately do NOT.
   Keep that separation clean.
 
 ## 1. Gate 0 — verify BEFORE locking the dataset (do this first, ~1 evening)
@@ -126,7 +126,7 @@ cycling.data.tfl.gov.uk (bulk history)      TfL Unified API (daily JSON)
 
 ## 4. Tool decisions (locked, with reasons)
 
-- **Orchestrator: Airflow.** Deliberate contrast with movein/aerospace (Dagster) → the
+- **Orchestrator: Airflow.** Deliberate contrast with the housing and aerospace projects (Dagster) → the
   portfolio then shows range across both major orchestrators, and Airflow remains the most
   job-spec-listed. DAGs: `daily_api_ingest`, `monthly_history_check`, `dbt_build_and_test`,
   with failure alerts (email/Slack webhook). Run via Docker Compose or Astronomer free tier.

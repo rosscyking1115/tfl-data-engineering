@@ -12,8 +12,8 @@ Parquet and queries them through DuckDB, so there is no live warehouse to mainta
 **[Live demo](https://tfl-data-engineering.streamlit.app/)** · [Engineering notes](docs/) · [Architecture](#architecture)
 
 > This is one of three UK open-data projects on my profile. The other two are
-> [uk-housing-decision-support](https://github.com/rosscyking1115/uk-housing-decision-support)
-> (analytics engineering: Dagster, 197 dbt tests, published dbt docs) and
+> [england-wales-housing-decision-support](https://github.com/rosscyking1115/england-wales-housing-decision-support)
+> (analytics engineering: Dagster, a fully tested dbt project, published dbt docs) and
 > [community-energy-flex](https://github.com/rosscyking1115/community-energy-flex) (a decision
 > system with LP/MILP optimisation and a forecast-versus-actual review). See
 > [my GitHub profile](https://github.com/rosscyking1115) for the full project map.
@@ -69,7 +69,8 @@ the median was **1.42×** a weather-adjusted baseline.
   running long after the Snowflake trial ends.
 - **Tested dimensional model.** A dbt star schema has **63 data
   tests** (schema, freshness tripwire, temporal coverage, reconciliation, a de-dup unit test)
-  plus **36 pytest** guards (idempotency, injected errors, an ML leakage guard). The full DAG
+  plus a **93-test pytest suite** — pipeline guards (idempotency, injected errors, an ML
+  leakage guard) and the reliability-reference conformance checks. The full DAG
   runs on both Snowflake (the documented build) and DuckDB. The rebuild **reconciles exactly**
   ([ADR-0010](docs/adr/ADR-0010-migration-retrospective.md)).
 
