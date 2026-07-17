@@ -2,8 +2,8 @@
 
 This project measures what happens to London's cycle-hire demand when the wider transport network
 is disrupted. It combines a PySpark historical backfill, a daily live-data job, a LightGBM demand
-model and a Streamlit app. The hosted workflow runs on free GitHub Actions, committed Parquet and
-DuckDB, so there is no live warehouse to maintain.
+model and a Streamlit app. The hosted workflow uses free GitHub Actions, stores outputs as committed
+Parquet and queries them through DuckDB, so there is no live warehouse to maintain.
 
 [![CI](https://github.com/rosscyking1115/tfl-data-engineering/actions/workflows/ci.yml/badge.svg)](https://github.com/rosscyking1115/tfl-data-engineering/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
