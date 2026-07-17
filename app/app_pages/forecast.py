@@ -1,4 +1,4 @@
-"""Demand forecast — the learned baseline that upgrades the median (ADR-0008)."""
+"""Station demand forecast and counterfactual baseline (ADR-0008)."""
 
 import altair as alt
 import data_access as da
@@ -7,9 +7,9 @@ import streamlit as st
 st.title("Station demand forecast")
 st.caption(
     "A LightGBM model learns each station's daily departures from calendar, weather, "
-    "recent-demand lags and the disruption flag. Predicting with the flag **off** gives a "
-    "sharper 'normal demand' baseline than the median-by-bucket it replaces — so the "
-    "disruption uplift stands out more cleanly ([ADR-0008](https://github.com/rosscyking1115/tfl-data-engineering/blob/main/docs/adr/ADR-0008-ml-demand-forecast.md))."
+    "recent-demand lags and the disruption flag. Predicting with the flag **off** estimates "
+    "normal demand more accurately than the previous median-by-bucket baseline "
+    "([ADR-0008](https://github.com/rosscyking1115/tfl-data-engineering/blob/main/docs/adr/ADR-0008-ml-demand-forecast.md))."
 )
 
 acc = da.forecast_accuracy()
@@ -24,8 +24,8 @@ if not acc.empty:
         st.metric("Improvement", f"{lift:.0f}% lower error", border=True,
                   help=f"across {int(r['n']):,} station-days")
     st.caption(
-        "On the strictly held-out 2026 window the model cut error **~21% vs the median** "
-        "and **~28% vs a seasonal-naive** baseline (temporal validation, never random)."
+        "On the held-out 2026 window, the model cut error by **~21% versus the median** and "
+        "**~28% versus a seasonal-naive baseline**. Validation was temporal, not random."
     )
 
 st.subheader("Predicted vs actual")
@@ -54,8 +54,8 @@ else:
         layers = base + rules
     st.altair_chart(layers, width="stretch")
     st.caption(
-        "Orange = model's expected 'normal' demand; blue = actual. Red lines mark known "
-        "disruption dates — where actual jumps above the learned baseline is the strike effect."
+        "Orange shows expected normal demand and blue shows actual demand. Red lines mark known "
+        "disruption dates."
     )
 
 st.subheader("What drives the model")
@@ -70,6 +70,6 @@ else:
     )
     st.altair_chart(bar, width="stretch")
     st.caption(
-        "Recent-demand lags (roll_7, roll_28, dep_lag_7) and station identity dominate; "
-        "weather and the disruption flag refine the estimate."
+        "Recent-demand lags (`roll_7`, `roll_28`, `dep_lag_7`) and station identity carry most "
+        "of the model gain. Weather and the disruption flag add smaller adjustments."
     )

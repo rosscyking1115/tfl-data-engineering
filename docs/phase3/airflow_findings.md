@@ -2,10 +2,9 @@
 
 ## Shape
 
-Airflow 2.11 **standalone** in one container (infra/docker-compose.yml): scheduler +
-webserver + SQLite metadata DB. Deliberately not the Celery/Postgres fleet — three
-small DAGs for one user; the honest-sizing rule from the Spark decision applies to
-orchestration too. dbt runs from an **isolated venv inside the image** because
+Airflow 2.11 runs in **standalone** mode in one container (`infra/docker-compose.yml`): scheduler,
+webserver and SQLite metadata database. Three small DAGs for one user do not justify a
+Celery/Postgres deployment. dbt runs from an **isolated virtual environment inside the image** because
 dbt-core and Airflow famously conflict on shared dependencies (Dockerfile).
 
 | DAG | schedule | what |
@@ -15,10 +14,12 @@ dbt-core and Airflow famously conflict on shared dependencies (Dockerfile).
 | `monthly_history_check` | @monthly | re-lists the TfL bucket; fails loudly if new files appeared (→ extend backfill) |
 | `failure_alert_demo` | manual | deliberately raises, to prove the alert path |
 
-Failure alerting: every DAG shares `on_failure_callback` (dags/alert_utils.py) —
-CRITICAL log line always; Slack-compatible webhook POST when `ALERT_WEBHOOK_URL` is set.
+Every DAG shares `on_failure_callback` (`dags/alert_utils.py`). It always writes a CRITICAL log
+line and sends a Slack-compatible webhook POST when `ALERT_WEBHOOK_URL` is set.
 
-## Verification (2026-07-08, all via `airflow dags trigger` — not hand-run scripts)
+## Verification (2026-07-08)
+
+All runs below used `airflow dags trigger`, not hand-run scripts.
 
 1. **`daily_api_ingest` → success.** 798 bikepoint + 20 line-status rows for the day
    landed in SILVER (raw JSON in `data/raw/api/2026-07-08/`), then it triggered dbt.

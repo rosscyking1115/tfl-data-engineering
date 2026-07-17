@@ -13,10 +13,10 @@ Run: 2026-07-07, `apache/spark:4.0.1-java21-python3` container, `local[10]`,
 | QUARANTINE | 240 |
 | per-file delta | **0 everywhere** |
 
-Quarantine breakdown (reasons overlap): 240 nonpositive_duration, of which 184 also
-missing_station + bad_end_ts — i.e. broken hires that never docked. Notably **zero
+Quarantine breakdown (reasons overlap): 240 `nonpositive_duration` rows, of which 184 also have
+`missing_station` and `bad_end_ts`, consistent with hires that never docked. There were **zero
 duplicate rental IDs**: the weekly/biweekly extracts do not overlap, so the dedupe
-guard never fired on this window (kept — it costs one window and protects re-runs
+guard did not fire in this window. It remains in place because it costs one window and protects re-runs
 and the older eras).
 
 ## Silver shape (verified independently with DuckDB, not Spark's own counters)
@@ -33,7 +33,7 @@ and the older eras).
 - 312,144 rows have NULL `end_station_code` — exactly the one 8-column 2022 file
   (`325JourneyDataExtract06Jul2022-12Jul2022.csv`); names survive, id repair happens
   in dbt via a name→station map.
-- Durations: min 1 s, max **209 days** (unreturned bike), mean 23.2 min — the
+- Durations: minimum 1 s, maximum **209 days** (an unreturned bike), mean 23.2 min. The
   accepted-range dbt test should flag, not fail, the long tail.
 
 ## Snowflake load (Phase 1b, 2026-07-07)
@@ -44,17 +44,17 @@ Era boundary confirmed in-warehouse: classic ends 2022-09-11 23:58, nextgen star
 2022-09-12 05:02 (the switchover gap is real, not an artifact).
 
 Cost: **0.105 credits (~$0.21 at Standard $2/credit)** for the entire 1.6 GB / 41M-row load on the XS
-warehouse; auto-suspend (60 s) kicked in immediately after. The trial's default
-`COMPUTE_WH` was also clamped to 60 s auto-suspend for credit hygiene.
+warehouse; auto-suspend (60 s) activated immediately afterwards. The trial's default
+`COMPUTE_WH` was also set to a 60 s auto-suspend.
 
-Known wart to fix in Phase 2: Spark wrote **10,803 small parquet files** (default
+Issue recorded for Phase 2: Spark wrote **10,803 small Parquet files** (default
 200 shuffle partitions fanned out across 54 year/month partitions). Harmless at this
-scale but sloppy — add a `.repartition("year","month")` (or coalesce per partition)
+scale, but inefficient. Add a `.repartition("year","month")` (or coalesce per partition)
 before the write and re-measure PUT/COPY time.
 
-## What the run itself taught (beyond Gate 0)
+## Findings beyond Gate 0
 
 Five header variants, not two eras (ADR-0002): a column deleted mid-2022, and two
 2025 column-order shuffles that positional CSV reading would have silently corrupted.
-Also: nextgen raw timestamps carry no seconds (`2026-01-15 23:59`) — Gate 0's DuckDB
+Nextgen raw timestamps carry no seconds (`2026-01-15 23:59`). Gate 0's DuckDB
 display had normalized this away; the job now tries all observed formats.

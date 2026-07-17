@@ -1,6 +1,6 @@
-"""TfL cycle-hire analytics — public demo over the gold layer.
+"""Public TfL cycle-hire demo over the gold layer.
 
-Entry point: defines navigation over two pages. Data comes from committed Parquet
+The entry point defines page navigation. Data comes from committed Parquet
 (see data_access.py), so no warehouse connection is needed.
 """
 

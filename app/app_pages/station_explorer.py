@@ -1,4 +1,4 @@
-"""Station explorer — busiest stations and single-station flow over time."""
+"""Busiest stations and station-level flow over time."""
 
 import altair as alt
 import data_access as da
@@ -28,8 +28,8 @@ with st.container(border=True):
         ],
     ).properties(height=max(300, top_n * 26))
     st.altair_chart(chart, width="stretch")
-    st.caption("Hire hotspots cluster around parks, mainline termini and the City — the "
-               "West End and riverside dominate departures.")
+    st.caption("The highest departure counts are concentrated around parks, mainline stations, "
+               "the West End, the City and the riverside.")
 
 with st.container(border=True):
     st.subheader("Single-station flow over time")
