@@ -17,7 +17,7 @@ def main(output_root: Path) -> None:
     output_root.mkdir(parents=True, exist_ok=True)
     report = run("spark", "all", output_root)
     assert report["result"] == "PASS"
-    assert len(report["scenarios"]) == 10
+    assert len(report["scenarios"]) == 9
     for result_path in sorted((output_root / "results").glob("*.json")):
         assert_expected(json.loads(result_path.read_text(encoding="utf-8")), result_path.stem)
     initial = json.loads(

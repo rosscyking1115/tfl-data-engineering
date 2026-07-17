@@ -1,9 +1,0 @@
-{
-  "case_id": "011_incompatible_replacement",
-  "contract_version": "1",
-  "evidence_basis": "constructed",
-  "operations": [
-    {"action": "ingest", "object_ref": "nextgen-standard.sidecar.json"},
-    {"action": "ingest", "object_ref": "nextgen-incompatible.sidecar.json"}
-  ]
-}

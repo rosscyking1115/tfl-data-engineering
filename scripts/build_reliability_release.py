@@ -10,16 +10,44 @@ import subprocess
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import Any
-
-from benchmark.reliability_reference.constants import MANAGED_SCENARIOS
-from benchmark.reliability_reference.managed_evidence import redact_evidence
+from typing import Any, Mapping
 
 T2_COMMIT = "45125f1e064f28ce03ef7e0f15acceb18c34604f"
 ALLOWED_ROOTS = ("benchmark/reliability_reference/", "docs/reliability-reference/")
 DELTA_TABLES = ("staging", "states", "manifests", "current_pointer", "run_events")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
+_EMAIL = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+_WORKSPACE = re.compile(r"https://[^\s\"']+\.cloud\.databricks\.com", re.IGNORECASE)
+_TOKEN = re.compile(r"\bdapi[a-z0-9]{20,}\b", re.IGNORECASE)
+_IDENTITY_KEYS = {"email", "host", "profile", "token", "user", "username", "workspace_url"}
+MANAGED_SCENARIOS = (
+    "001_initial_variants",
+    "002_duplicate_replay",
+    "003_new_period",
+    "004_corrected_period",
+    "008_interrupted_publish",
+    "009_full_rebuild",
+    "011_incompatible_replacement",
+)
+
+
+def redact_evidence(value: Any) -> Any:
+    """Remove workspace identity and token-shaped values from release evidence."""
+    if isinstance(value, Mapping):
+        return {
+            str(key): "<redacted>"
+            if str(key).lower() in _IDENTITY_KEYS
+            else redact_evidence(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact_evidence(item) for item in value]
+    if isinstance(value, str):
+        rendered = _WORKSPACE.sub("<redacted>", value)
+        rendered = _EMAIL.sub("<redacted>", rendered)
+        return _TOKEN.sub("<redacted>", rendered)
+    return value
 
 
 class ReleaseError(ValueError):

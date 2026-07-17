@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .compare import compare_results
-from .constants import CONTRACT_VERSION, MANAGED_SCENARIOS, SCENARIO_ROOT, VERSION
+from .constants import CONTRACT_VERSION, SCENARIO_ROOT, VERSION
 from .contracts import ContractError, load_json, validate_fixture_pack
 from .oracle import assert_expected, validate_oracle
 from .runner import run_case
@@ -133,58 +133,6 @@ def compare(duckdb_output: Path, spark_output: Path, output: Path) -> dict[str, 
     return report
 
 
-def compare_managed(reference_output: Path, managed_output: Path, output: Path) -> dict[str, Any]:
-    """Compare exported Delta semantics with the authoritative portable output."""
-    reference_results = {
-        path.name: path for path in (reference_output / "results").glob("*.json")
-    }
-    managed_results = {path.name: path for path in (managed_output / "results").glob("*.json")}
-    scenarios = []
-    required_names = [f"{name}.json" for name in MANAGED_SCENARIOS]
-    for name in required_names:
-        if name not in managed_results:
-            scenarios.append(
-                {
-                    "case_id": Path(name).stem,
-                    "result": "FAIL",
-                    "missing_managed_result": True,
-                }
-            )
-            continue
-        if name not in reference_results:
-            scenarios.append(
-                {
-                    "case_id": Path(name).stem,
-                    "result": "FAIL",
-                    "missing_reference_result": True,
-                }
-            )
-            continue
-        expected = load_json(reference_results[name])
-        actual = load_json(managed_results[name])
-        scenarios.append({"case_id": expected["case_id"], **compare_results(expected, actual)})
-    for name in sorted(set(managed_results) - set(required_names)):
-        scenarios.append(
-            {
-                "case_id": Path(name).stem,
-                "result": "FAIL",
-                "unexpected_managed_result": True,
-            }
-        )
-    passed = bool(scenarios) and all(item["result"] == "PASS" for item in scenarios)
-    report = {
-        "result": "PASS" if passed else "FAIL",
-        "benchmark_version": VERSION,
-        "contract_version": CONTRACT_VERSION,
-        "comparison": "portable DuckDB oracle versus managed Delta decoded semantics",
-        "reference_engine": "duckdb",
-        "managed_engine": "delta",
-        "scenarios": scenarios,
-    }
-    _write_json(output / "comparison.json", report)
-    return report
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="tfl-reliability")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -198,10 +146,6 @@ def build_parser() -> argparse.ArgumentParser:
     compare_parser.add_argument("--duckdb", type=Path, required=True)
     compare_parser.add_argument("--spark", type=Path, required=True)
     compare_parser.add_argument("--output", type=Path, required=True)
-    managed_parser = commands.add_parser("compare-managed")
-    managed_parser.add_argument("--reference", type=Path, required=True)
-    managed_parser.add_argument("--managed", type=Path, required=True)
-    managed_parser.add_argument("--output", type=Path, required=True)
     return parser
 
 
@@ -218,10 +162,7 @@ def main(arguments: list[str] | None = None) -> int:
             report = run(args.engine, args.scenario, args.output)
             print(json.dumps(report, ensure_ascii=False, indent=2))
             return 0 if report["result"] == "PASS" else 1
-        if args.command == "compare-managed":
-            report = compare_managed(args.reference, args.managed, args.output)
-        else:
-            report = compare(args.duckdb, args.spark, args.output)
+        report = compare(args.duckdb, args.spark, args.output)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0 if report["result"] == "PASS" else 1
     except ContractError as error:

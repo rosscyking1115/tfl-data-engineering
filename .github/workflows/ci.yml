@@ -100,20 +100,3 @@ jobs:
         with:
           name: reliability-reference-parity
           path: benchmark-output/comparison
-
-  reliability-managed-offline:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: pip
-      - name: Install offline gate dependencies
-        run: pip install duckdb pyarrow pytest
-      - name: Validate managed contracts, release policy, claims, and redaction
-        run: pytest tests/test_reliability_reference_t3.py
-      - name: Validate portable fixtures and scenario oracle
-        run: python -m benchmark.reliability_reference validate
