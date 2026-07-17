@@ -1,6 +1,6 @@
 """Pipeline guards (rigor-pass Area 4): idempotency + injected errors, on fixtures.
 
-Production-grade means the pipeline KNOWS when it's wrong: re-running must not double-load,
+A reliable pipeline KNOWS when it's wrong: re-running must not double-load,
 and corrupt input must fail loudly instead of silently passing through.
 """
 
