@@ -1,4 +1,4 @@
-"""Disruption impact — how tube/rail strikes shift cycling demand (the flagship)."""
+"""How Tube and rail strikes change cycle-hire demand."""
 
 import altair as alt
 import data_access as da
@@ -9,10 +9,9 @@ BLUE, GREY, RED = "#2563eb", "#9ca3af", "#ef4444"
 
 st.title("Disruption impact on cycling demand")
 st.caption(
-    "When the Tube is disrupted, displaced journeys spill onto the cycle network. "
-    "Every strike day is compared against a **weather-adjusted normal** — the same station, "
-    "same weekday, same wet/cold conditions — so ordinary weather is never mistaken for the "
-    "strike effect."
+    "Each strike day is compared with a **weather-adjusted normal** for the same station, "
+    "weekday and wet or cold conditions. This separates the observed disruption association "
+    "from ordinary weather variation."
 )
 
 # --- Headline: the whole story in two numbers -------------------------------------------
@@ -27,7 +26,7 @@ if not head.empty:
         if normal is not None:
             st.metric(
                 "A normal day", f"{normal['median_ratio']:.2f}× demand", border=True,
-                help=f"Baseline — median across {int(normal['n_dates'])} normal days",
+                help=f"Baseline median across {int(normal['n_dates'])} normal days",
             )
         if disr is not None:
             uplift = (disr["median_ratio"] - 1) * 100
@@ -46,37 +45,36 @@ if not head.empty:
     st.caption(cap)
 
     st.caption(
-        ":material/balance: **This is an observed association, not a causal claim** — strike "
-        "days are compared against a weather-adjusted normal with stated assumptions "
+        ":material/balance: **This is an observed association, not a causal claim.** Strike "
+        "days are compared with a weather-adjusted normal under stated assumptions "
         "([the analytical contract](https://github.com/rosscyking1115/tfl-data-engineering/blob/main/docs/adr/ADR-0009-analytical-contract.md))."
     )
 
 if rigor:
-    with st.expander("Robustness — placebo test and sensitivity battery", icon=":material/science:"):
+    with st.expander("Placebo and sensitivity checks", icon=":material/science:"):
         pl = rigor.get("placebo", {})
         if pl:
             st.markdown(
                 f"**Placebo (negative control):** the same statistic on {pl['n_draws']:,} random "
                 f"sets of non-strike dates (day-of-week matched) has a null median of "
-                f"**{pl['null_median']}×** and a 97.5th percentile of **{pl['null_p975']}×** — "
-                f"the observed **{pl['observed']}×** sits far outside it "
-                f"(one-sided p {pl['p_value_one_sided']}). The method does not manufacture signal "
-                f"from ordinary days."
+                f"**{pl['null_median']}×** and a 97.5th percentile of **{pl['null_p975']}×**. "
+                f"The observed **{pl['observed']}×** is outside that distribution "
+                f"(one-sided p {pl['p_value_one_sided']})."
             )
         sens = rigor.get("sensitivity", {})
         if sens.get("weather_thresholds"):
             tbl = pd.DataFrame(sens["weather_thresholds"])
             tbl = tbl.rename(columns={"wet_mm": "wet ≥ (mm)", "cold_c": "cold < (°C)",
                                       "headline": "headline ×", "primary": "primary spec"})
-            st.markdown("**Sensitivity to the weather-bucket thresholds** (the baseline's one "
-                        "arbitrary choice) — the effect barely moves:")
+            st.markdown("**Sensitivity to the weather-bucket thresholds.** These thresholds are "
+                        "the baseline's main discretionary choice:")
             st.dataframe(tbl, hide_index=True, width="content")
         fam = sens.get("baseline_family", {})
         if fam:
             st.markdown(
-                f"**Baseline family:** stratified median **{fam['stratified_median']}×** vs "
-                f"LightGBM counterfactual **{fam['lightgbm_counterfactual']}×** — two "
-                f"independently-built baselines agree the effect is real."
+                f"**Baseline family:** stratified median **{fam['stratified_median']}×**; "
+                f"LightGBM counterfactual **{fam['lightgbm_counterfactual']}×**. The independently "
+                f"built baselines give similar estimates."
             )
 
 # --- Every strike day, ranked --------------------------------------------------------------
@@ -100,8 +98,8 @@ rule = alt.Chart(dates).mark_rule(color=RED, strokeDash=[4, 4]).encode(x=alt.dat
 st.altair_chart(bars + rule, width="stretch")
 st.caption(
     "Blue = more cycling than normal; the dashed red line is a normal day. Every full network "
-    "strike lifts demand; the only near-baseline days are a stations-only partial action "
-    "(25 Nov 2022) and a residual knock-on day — severity, not weather, explains the spread. "
+    "strike lifts demand. The near-baseline days are a stations-only partial action "
+    "(25 Nov 2022) and a residual knock-on day. "
     "Each event is source-cited in the repo; a citation audit removed two January 2024 dates "
     "whose strike was called off."
 )
@@ -132,6 +130,5 @@ else:
     st.altair_chart(chart, width="stretch")
     st.caption(
         "Each bar is one docking station's extra hires that day versus its own weather-adjusted "
-        "normal. The surge concentrates around Tube interchanges and business districts — exactly "
-        "where displaced commuters need an alternative."
+        "normal. The largest increases are around Tube interchanges and business districts."
     )

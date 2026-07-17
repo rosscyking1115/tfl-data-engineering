@@ -1,8 +1,9 @@
 # Source contracts
 
-What each upstream source provides, what this pipeline depends on, and how a breaking change
-surfaces. The "we depend on" line is the tripwire: if any of those fields drift, a gate fails
-loudly (never silent mis-parsing). Verified against primary docs + observed payloads.
+This document records what each upstream source provides, which fields the pipeline uses and how a
+breaking change appears. If a listed dependency changes, the corresponding gate stops the run
+instead of silently misreading the payload. The details come from primary documentation and
+observed payloads.
 
 ## 1 · Santander journey extracts (the analytical backbone)
 
@@ -22,7 +23,7 @@ loudly (never silent mis-parsing). Verified against primary docs + observed payl
 |---|---|
 | Endpoint | `GET https://api.tfl.gov.uk/Line/Mode/tube,dlr,overground,elizabeth-line,tram/Status` |
 | Auth / limits | Anonymous works (throttled ~50 req/min); `app_key` raises to 500 req/min. One call/day used. |
-| Cadence | Live state only — **no historical archive**. History exists only because we snapshot daily (permanent-if-collected; ADR-0009 two-horizon). |
+| Cadence | Live state only; **there is no historical archive**. History exists only because the workflow takes a daily snapshot (permanent if collected; ADR-0009 two-horizon). |
 | Shape | Per line: `id, name, modeName, lineStatuses[] {statusSeverity, statusSeverityDescription, reason}`. `statusSeverity == 10` = Good Service; lower = worse. |
 | We depend on | `id, name, modeName`, `lineStatuses[].statusSeverity/statusSeverityDescription/reason`. |
 | Breakage surfaces as | The row-count **quality gate** (<15 lines) or dbt schema tests on the snapshot staging model. |
@@ -34,7 +35,7 @@ loudly (never silent mis-parsing). Verified against primary docs + observed payl
 | Endpoint | `GET https://api.tfl.gov.uk/BikePoint` |
 | Auth / limits | As above. One call/day. |
 | Shape | ~800 places with `id, commonName, lat, lon` + `additionalProperties` (`NbBikes, NbEmptyDocks, NbDocks, NbEBikes`). |
-| Known quirks | Property values are strings and can be **missing or corrupt** (a corrupt `NbDocks` caused the 2026-07-11..13 outage — now NA-safe). `commonName` doesn't always match journey-file station names verbatim (93% match after whitespace collapsing). |
+| Known quirks | Property values are strings and can be **missing or corrupt**. A corrupt `NbDocks` caused the 2026-07-11..13 outage; parsing now handles missing values safely. `commonName` does not always match journey-file station names verbatim (93% match after whitespace collapsing). |
 | We depend on | `id, commonName, lat, lon` + the four count properties, parsed leniently to `None` (no data ≠ zero). |
 | Breakage surfaces as | Quality gate (<700 docks) or NaN-rate spikes visible on the health page. |
 

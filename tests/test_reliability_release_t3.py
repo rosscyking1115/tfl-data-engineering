@@ -1,11 +1,18 @@
 import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
 
-from scripts.build_reliability_release import T2_COMMIT, ReleaseError, validate_release_policy
+from scripts.build_reliability_release import (
+    T2_COMMIT,
+    ReleaseError,
+    _release_paths,
+    validate_portable_release_target,
+    validate_release_policy,
+)
 
 ROOT = Path(__file__).parents[1]
 RELEASE_DOCS = ROOT / "docs" / "reliability-reference" / "releases" / "0.3.0"
@@ -13,15 +20,30 @@ SHA256 = re.compile(r"^[0-9a-f]{64}$")
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
 
-def test_fallback_release_policy_is_pinned_to_frozen_t2():
+def test_fallback_release_policy_requires_a_commit_and_frozen_portable_contract():
     validate_release_policy("0.2.0", "NARROW", T2_COMMIT)
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    validate_portable_release_target(ROOT, head)
 
-    with pytest.raises(ReleaseError, match="T2 commit"):
+    with pytest.raises(ReleaseError, match="full target commit"):
         validate_release_policy("0.2.0", "NARROW", "HEAD")
     with pytest.raises(ReleaseError, match="managed PASS"):
         validate_release_policy("0.3.0", "NARROW", "HEAD")
     with pytest.raises(ReleaseError, match="STOP"):
         validate_release_policy("0.2.0", "STOP", T2_COMMIT)
+
+
+def test_v020_archive_excludes_unreleased_managed_evidence():
+    paths = _release_paths(ROOT, "HEAD", "0.2.0")
+
+    assert "benchmark/reliability_reference/README.md" in paths
+    assert not any(path.startswith("docs/reliability-reference/releases/") for path in paths)
 
 
 def test_terminal_narrow_report_is_redacted_hashed_and_torn_down():
@@ -79,6 +101,6 @@ def test_manual_release_workflow_is_fixed_to_the_narrow_fallback():
     assert 'OWNER_APPROVAL: ${{ inputs.owner_approval }}' in workflow
     assert '--version "0.2.0"' in workflow
     assert '--managed-result "NARROW"' in workflow
-    assert f'--target "{T2_COMMIT}"' in workflow
+    assert workflow.count('--target "${{ github.sha }}"') == 2
     assert 'gh release create "v0.2.0"' in workflow
     assert "v0.3.0" not in workflow

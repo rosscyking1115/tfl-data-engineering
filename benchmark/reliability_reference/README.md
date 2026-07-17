@@ -1,14 +1,13 @@
 # Portable reliability reference 0.2.0
 
-This is a compact, licence-bounded compatibility and replay case suite derived from five ordered
-header variants observed across 148 locally retained TfL Cycle Hire files. Constructed fixtures
-prove deterministic duplicate, replacement, rejection, DST, recovery, and DuckDB/Spark
-conformance behavior.
+This licence-bounded suite tests compatibility, replay and recovery against five ordered-header
+variants observed in 148 locally retained TfL Cycle Hire files. Its constructed fixtures cover
+duplicate replay, replacement, rejection, daylight-saving transitions and DuckDB/Spark parity.
 
-It is deliberately separate from the Streamlit app, daily workflow, ingestion state, and live
+It is separate from the Streamlit app, daily workflow, ingestion state and live
 Parquet. It downloads no source data, needs no credentials, and writes only to an explicit local
-workspace. It is not a raw TfL benchmark, managed-platform proof, performance comparison, release,
-or production runtime.
+workspace. It is not a raw TfL benchmark, managed-platform proof, performance comparison or
+production runtime.
 
 ## Run it
 
@@ -32,9 +31,9 @@ The Python seam is:
 run_case(engine, case_definition, *, workspace=None, fault_at=None) -> RunResult
 ```
 
-`workspace=None` creates a disposable directory. Explicit workspaces inside committed fixtures,
-contracts, or expected outputs are rejected. The runner never imports application state and does
-not perform automatic garbage collection; deleting an old workspace is an explicit caller action.
+`workspace=None` creates a temporary directory. The runner rejects workspaces inside committed
+fixtures, contracts or expected-output directories. It never imports application state or removes
+old workspaces automatically; the caller decides when to delete one.
 
 ## Contract
 
@@ -43,15 +42,15 @@ not perform automatic garbage collection; deleting an old workspace is an explic
   milliseconds.
 - Source timestamps become offset-aware `Europe/London` values. Ambiguous and nonexistent local
   times reject the complete object; UTC is not derived.
-- Invalid values, truncated inputs, unknown headers, and ownership violations reject the complete
+- Invalid values, truncated inputs, unknown headers and ownership violations reject the complete
   object. Row quarantine is reserved and remains zero.
 - Non-correction ownership periods cannot overlap active objects, and `(schema_family, rental_id)`
   must remain unique across the complete active state.
-- DuckDB performs typed CSV reads, parsing, and validation in SQL. Spark uses an explicit typed
+- DuckDB performs typed CSV reads, parsing and validation in SQL. Spark uses an explicit typed
   schema plus DataFrame expressions and windows. Only contract/state orchestration and comparison
   are shared; Europe/London DST fold validation is implemented independently in each adapter.
 - State hashes cover compact, sorted-key UTF-8 JSON with explicit nulls and canonical row order.
-- JSON under `expected/` is the human-readable oracle. Parquet is an interoperability artifact and
+- JSON under `expected/` is the reviewed oracle. Parquet is an interoperability artifact and
   is compared after decoding, never byte-for-byte.
 
 See [replay semantics](../../docs/reliability-reference/replay-semantics.md),

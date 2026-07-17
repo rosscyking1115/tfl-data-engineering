@@ -1,18 +1,17 @@
-"""Today's network — the live layer, refreshed daily by the GitHub Action."""
+"""Latest line-status and dock-occupancy snapshot."""
 
 import altair as alt
 import data_access as da
 import streamlit as st
 
 st.title("Today's network")
-st.caption("Live TfL Line Status + BikePoint dock occupancy, refreshed daily by a "
-           "GitHub Actions job writing Parquet to the repo.")
+st.caption("A daily GitHub Actions job writes TfL Line Status and BikePoint data to committed Parquet.")
 
 lines = da.live_line_status()
 docks = da.live_bikepoint()
 
 if lines.empty and docks.empty:
-    st.info("No live snapshot committed yet — the daily job populates this.")
+    st.info("No live snapshot has been committed yet. The daily job will populate this page.")
     st.stop()
 
 if not lines.empty:

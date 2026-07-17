@@ -14,6 +14,8 @@ from typing import Any, Mapping
 
 T2_COMMIT = "45125f1e064f28ce03ef7e0f15acceb18c34604f"
 ALLOWED_ROOTS = ("benchmark/reliability_reference/", "docs/reliability-reference/")
+PORTABLE_README = "benchmark/reliability_reference/README.md"
+UNRELEASED_EVIDENCE_ROOT = "docs/reliability-reference/releases/"
 DELTA_TABLES = ("staging", "states", "manifests", "current_pointer", "run_events")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
@@ -62,8 +64,8 @@ def validate_release_policy(version: str, result: str, target_commit: str) -> No
     if version == "0.2.0":
         if result not in {"NARROW", "FAIL"}:
             raise ReleaseError("version 0.2.0 fallback requires NARROW or FAIL")
-        if target_commit != T2_COMMIT:
-            raise ReleaseError(f"version 0.2.0 must target the frozen T2 commit {T2_COMMIT}")
+        if not _COMMIT.fullmatch(target_commit):
+            raise ReleaseError("version 0.2.0 requires a full target commit")
     elif version != "0.3.0":
         raise ReleaseError(f"unsupported release version: {version}")
 
@@ -176,7 +178,7 @@ def _git(repo: Path, *arguments: str, text: bool = False) -> str | bytes:
     return completed.stdout
 
 
-def _release_paths(repo: Path, ref: str) -> list[str]:
+def _tree_paths(repo: Path, ref: str, *roots: str) -> list[str]:
     rendered = _git(
         repo,
         "ls-tree",
@@ -184,11 +186,21 @@ def _release_paths(repo: Path, ref: str) -> list[str]:
         "--name-only",
         ref,
         "--",
-        "benchmark/reliability_reference",
-        "docs/reliability-reference",
+        *roots,
         text=True,
     )
-    paths = [line.strip() for line in str(rendered).splitlines() if line.strip()]
+    return [line.strip() for line in str(rendered).splitlines() if line.strip()]
+
+
+def _release_paths(repo: Path, ref: str, version: str) -> list[str]:
+    paths = _tree_paths(
+        repo,
+        ref,
+        "benchmark/reliability_reference",
+        "docs/reliability-reference",
+    )
+    if version == "0.2.0":
+        paths = [path for path in paths if not path.startswith(UNRELEASED_EVIDENCE_ROOT)]
     for path in paths:
         normalized = PurePosixPath(path).as_posix()
         if not normalized.startswith(ALLOWED_ROOTS):
@@ -196,6 +208,32 @@ def _release_paths(repo: Path, ref: str) -> list[str]:
         if normalized.startswith("app/") or PurePosixPath(normalized).name.startswith("live_"):
             raise ReleaseError(f"live application state is forbidden: {path}")
     return paths
+
+
+def _portable_contract_manifest(repo: Path, ref: str) -> list[dict[str, str]]:
+    """Hash every portable-suite file except its editable public README."""
+
+    paths = _tree_paths(repo, ref, "benchmark/reliability_reference")
+    return [
+        {"path": path, "sha256": hashlib.sha256(_blob(repo, ref, path)).hexdigest()}
+        for path in sorted(paths)
+        if path != PORTABLE_README
+    ]
+
+
+def validate_portable_release_target(repo: Path, target_commit: str) -> None:
+    """Allow later prose edits only when the frozen T2 portable suite is unchanged."""
+
+    try:
+        _git(repo, "merge-base", "--is-ancestor", T2_COMMIT, target_commit)
+    except subprocess.CalledProcessError as error:
+        raise ReleaseError("version 0.2.0 target must descend from the frozen T2 commit") from error
+    if _portable_contract_manifest(repo, target_commit) != _portable_contract_manifest(
+        repo, T2_COMMIT
+    ):
+        raise ReleaseError(
+            "version 0.2.0 portable implementation, contracts, fixtures or oracle changed after T2"
+        )
 
 
 def _blob(repo: Path, ref: str, path: str) -> bytes:
@@ -242,7 +280,7 @@ def build_release(
     repo = repo.resolve()
     output.mkdir(parents=True, exist_ok=True)
     commit = str(_git(repo, "rev-parse", f"{ref}^{{commit}}", text=True)).strip()
-    paths = _release_paths(repo, ref)
+    paths = _release_paths(repo, ref, version)
     if not paths:
         raise ReleaseError("release tree contains no reliability-reference files")
 
@@ -324,13 +362,19 @@ def build_release(
         encoding="utf-8",
     )
     notes = output / "RELEASE_NOTES.md"
-    notes.write_text(
-        f"# Reliability reference v{version}\n\n"
-        "Constructed, licence-bounded fixtures and reviewed semantic outputs only. "
-        "This is not raw TfL data, production Databricks operation, a performance result, "
-        "or an SLA claim. See the included attribution and limitations.\n",
-        encoding="utf-8",
-    )
+    if version == "0.2.0":
+        note_body = (
+            "Version 0.2.0 is the portable DuckDB/Spark suite. It uses constructed fixtures and "
+            "reviewed semantic outputs; it contains no raw TfL rows. The bounded Databricks trial "
+            "ended NARROW before the semantic oracle ran, so this release makes no Databricks, "
+            "performance, production or SLA claim. See the included attribution and limitations."
+        )
+    else:
+        note_body = (
+            "Version 0.3.0 adds the reviewed bounded Databricks result to the portable "
+            "DuckDB/Spark suite. See the included evidence, attribution and limitations."
+        )
+    notes.write_text(f"# Reliability reference v{version}\n\n{note_body}\n", encoding="utf-8")
     checksums = output / "SHA256SUMS"
     checksum_files = (archive, sbom, manifest, notes)
     checksums.write_text(
@@ -356,6 +400,8 @@ def main() -> int:
     repo = Path(__file__).resolve().parents[1]
     target = str(_git(repo, "rev-parse", f"{args.target}^{{commit}}", text=True)).strip()
     validate_release_policy(args.version, args.managed_result, target)
+    if args.version == "0.2.0":
+        validate_portable_release_target(repo, target)
     if args.version == "0.3.0":
         evidence = json.loads(
             _blob(

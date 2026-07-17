@@ -9,7 +9,7 @@
 | dim_station | 856 | 24.4 s |
 | fact_journey | 41,376,181 | 20.7 s |
 
-## The dim_station design (the interesting part)
+## `dim_station` design
 
 The two eras use disjoint station-ID spaces (classic integer ids vs nextgen
 zero-padded terminal codes), and one 2022 file has no end-station id column at all.
@@ -29,9 +29,9 @@ id-less rows.
 
 ## Sanity queries through the star
 
-Top station all-time: Hyde Park Corner (287k departures) — matches TfL's own
+Top station across the retained window: Hyde Park Corner (287k departures), which matches TfL's
 published rankings. Weekend rides run longer than weekday in both eras (24.6 vs
-19.2 min classic; 30.9 vs 21.7 nextgen) — the expected leisure-vs-commute signal.
+19.2 min classic; 30.9 vs 21.7 nextgen).
 
 ## Cost
 

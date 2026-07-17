@@ -3,11 +3,10 @@
 > [!NOTE]
 > **Superseded by [`powerbi/`](../../powerbi/).** This page describes the original **Snowflake**
 > connection, which is a documented past phase (the trial expires). The current, durable build
-> reads the committed Parquet instead — see [`powerbi/README.md`](../../powerbi/README.md) for the
+> reads committed Parquet instead. See [`powerbi/README.md`](../../powerbi/README.md) for the
 > model-as-code (DAX + Power Query M + TMDL) and build guide. This page is kept for history.
 
-The dashboard connects straight to `TFL.GOLD` — no modelling gymnastics in Power BI;
-dbt already shaped everything.
+The dashboard connects directly to `TFL.GOLD`; dbt has already shaped the tables.
 
 ## Connect
 
@@ -35,7 +34,7 @@ Power BI Desktop → Get Data → **Snowflake**:
 Model relationships: `date_key` → `DIM_DATE`, `station_key` → `DIM_STATION`
 (single-direction filters).
 
-## Suggested pages (keep it to ~3)
+## Suggested pages
 
 1. **Usage trends** — journeys/day line (2022→now, the Sep-2022 era switch is visible),
    weekday-vs-weekend split, e-bike share growth.

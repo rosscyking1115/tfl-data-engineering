@@ -1,10 +1,8 @@
-"""No-API 'Quick answers' — templated natural-language responses over the gold layer.
+"""Templated, no-API responses over the gold layer.
 
-These power the free, always-on tier of the Ask page: no Anthropic key, no cost, no abuse
-surface. Each function returns a Markdown string built purely from the curated DuckDB/Parquet
-loaders in `data_access.py` (the same data the AI assistant's tools use). Because there's no
-LLM, every number is exactly what the query returned — the strongest possible correctness
-guarantee, and available to every public visitor.
+Each function returns a Markdown string from the curated DuckDB/Parquet loaders in
+`data_access.py`, which are also used by the assistant tools. The preset answers need no Anthropic
+key, and every number comes directly from a query result.
 """
 
 from __future__ import annotations
@@ -25,7 +23,7 @@ def why_disrupted() -> str:
     parts = [f"As of **{snap}**, {len(bad['line_name'].unique())} line(s) are disrupted:\n"]
     for _, r in bad.iterrows():
         reason = (r["reason"] or "").strip() or "No reason published by TfL."
-        parts.append(f"- 🔴 **{r['line_name']}** ({r['mode']}) — *{r['status_description']}*  \n  {reason}")
+        parts.append(f"- **{r['line_name']}** ({r['mode']}): *{r['status_description']}*  \n  {reason}")
     return "\n".join(parts)
 
 
@@ -36,7 +34,7 @@ def busiest_stations(year: int, by: str = "departures") -> str:
         return f"No station activity recorded in {year}."
     lines = [f"**Busiest stations by {by} in {year}:**\n"]
     for i, r in enumerate(top.itertuples(index=False), 1):
-        lines.append(f"{i}. **{r.station_name}** — {int(getattr(r, by)):,} {by}")
+        lines.append(f"{i}. **{r.station_name}:** {int(getattr(r, by)):,} {by}")
     return "\n".join(lines)
 
 
@@ -52,10 +50,10 @@ def strike_effect() -> str:
     ratio = disr["median_ratio"]
     uplift = (ratio - 1) * 100
     return (
-        f"On strike days, cycling runs at **{ratio:.2f}× a weather-adjusted normal** — about "
+        f"On strike days, cycling runs at **{ratio:.2f}× a weather-adjusted normal**, about "
         f"**{uplift:+.0f}%** more than a comparable non-strike day (median across "
         f"{int(disr['n_dates'])} source-cited disruption days). Full network strikes surge up to "
-        f"~2.3×; only a stations-only partial action and a knock-on day sit near baseline."
+        f"~2.3×. A stations-only partial action and a knock-on day sit near baseline."
     )
 
 
@@ -74,7 +72,7 @@ def demand_trend() -> str:
     return (
         f"Over the last 90 days of journey data (**{lo} → {hi}**): **{total:,} journeys**, "
         f"averaging **{recent['journeys'].mean():,.0f}/day**, with an e-bike share of "
-        f"**{ebike:.1%}**. (Journey data lags ~1–2 months — this is the most recent published window.)"
+        f"**{ebike:.1%}**. Journey data lags ~1–2 months, so this is the latest published window."
     )
 
 
@@ -90,5 +88,5 @@ def station_lookup(station_name: str) -> str:
     lo_d, hi_d = pd.Timestamp(lo).date(), pd.Timestamp(hi).date()
     return (
         f"**{station_name}** over {lo_d} → {hi_d}: **{dep:,} departures**, **{arr:,} arrivals** "
-        f"(net {net:+,}) — {tilt} for journeys."
+        f"(net {net:+,}). This station is {tilt} for journeys."
     )

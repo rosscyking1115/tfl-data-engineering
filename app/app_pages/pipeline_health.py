@@ -1,4 +1,4 @@
-"""Pipeline health — the workflow watching itself (rigor-pass Area 5, ADR-0009 §honesty)."""
+"""Snapshot coverage, freshness and daily-run metadata."""
 
 from datetime import date, datetime, timezone
 
@@ -12,10 +12,9 @@ COLLECTION_START = date(2026, 7, 8)  # forward disruption log began here (ADR-00
 
 st.title("Pipeline health")
 st.caption(
-    "The daily job snapshots the live network (a missed day is a **permanent** hole — the API "
-    "has no history), ingests newly published journey CSVs, and rebuilds the analytics layer "
-    "gated by dbt tests. This page is the pipeline watching itself: coverage, freshness and "
-    "run metadata, gaps included."
+    "The daily job snapshots the live network, ingests new journey CSVs and rebuilds the "
+    "analytics layer behind dbt tests. The API has no history, so a missed snapshot is a "
+    "**permanent** gap. This page reports coverage, freshness and run metadata."
 )
 
 # full (unfiltered) snapshot history for coverage — not just the latest day
@@ -61,9 +60,9 @@ if missing:
     st.warning(
         f"**{len(missing)} permanently missed snapshot day(s):** "
         + ", ".join(str(m) for m in missing)
-        + " — the scheduled job failed on these dates (2026-07-11/12: a fill-rate NA crash plus "
+        + ". The scheduled job failed on these dates (2026-07-11/12: a fill-rate NA crash plus "
         "a branch-protection push block; both fixed). The API keeps no history, so these holes "
-        "are honest and permanent — exactly why the freshness tripwire and this page exist.",
+        "are permanent and remain visible here.",
         icon=":material/report:",
     )
 else:
@@ -71,7 +70,7 @@ else:
 
 with st.container(border=True):
     st.subheader("Snapshot volume by day", anchor=False)
-    st.caption("Rows collected per daily snapshot — a sudden drop means an upstream problem "
+    st.caption("Rows collected per daily snapshot. A sudden drop indicates an upstream problem "
                "even if the run went green.")
     vol = ls_all.groupby("snapshot_date").size().reset_index(name="line_status_rows")
     chart = alt.Chart(vol).mark_bar(color="#2563eb").encode(
@@ -89,7 +88,6 @@ else:
     st.caption("Run-metadata table appears after the first gated daily run commits `run_log.parquet`.")
 
 st.caption(
-    "Reliability design: idempotent upserts (safe re-runs), retry/backoff on API calls, "
-    "row-count + schema gates that fail loudly, dbt tests gating delivery, a freshness "
-    "tripwire (<26h), and an auto-opened GitHub issue on any red run."
+    "The workflow uses idempotent upserts, API retry and backoff, row-count and schema gates, "
+    "dbt tests, a <26-hour freshness tripwire and an automatically opened GitHub issue after a failed run."
 )

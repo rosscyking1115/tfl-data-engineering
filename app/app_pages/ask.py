@@ -1,4 +1,4 @@
-"""Ask the data — free no-API 'Quick answers' for everyone, plus optional BYO-key AI chat."""
+"""Preset data answers and an optional bring-your-own-key chat."""
 
 import os
 
@@ -9,14 +9,14 @@ import streamlit as st
 
 st.title("Ask the data")
 st.caption(
-    "Get answers about London cycle-hire from the gold layer. The **Quick answers** below need "
-    "no setup and work for everyone; the free-form AI chat is optional and uses your own key."
+    "The **Quick answers** below query the gold layer without an API key. The optional free-form "
+    "chat uses your own Anthropic key."
 )
 
 # --- Tier 1: Quick answers (no key, no cost, always on) ------------------------------------
 with st.container(border=True):
     st.subheader("Quick answers", anchor=False)
-    st.caption("Pick a question — answered straight from the data, no AI, every number is exact.")
+    st.caption("Pick a question. Each answer is generated directly from a fixed data query.")
 
     choice = st.pills(
         "Question",
@@ -65,8 +65,8 @@ def _env_or_secrets_key() -> str | None:
 
 st.subheader("Ask anything", anchor=False)
 st.caption(
-    "Free-form questions answered by Claude, which calls the same curated tools and reports only "
-    "numbers a tool returned (it declines anything outside the data). Uses your own Anthropic key."
+    "Claude answers free-form questions by calling the same curated tools. It reports numbers only "
+    "when a tool returns them and declines questions outside the available data."
 )
 
 key = _env_or_secrets_key()
@@ -79,7 +79,7 @@ if not key:
             help="Get one at console.anthropic.com. Each question spends a small amount of your credit.",
         )
         st.caption(
-            ":material/lock: Used only in this browser session to talk to Anthropic — never stored, "
+            ":material/lock: Used only in this browser session to contact Anthropic. It is never stored, "
             "logged, or committed. Prefer the Quick answers above if you'd rather not use a key."
         )
         if entered:

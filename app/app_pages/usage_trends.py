@@ -1,4 +1,4 @@
-"""Usage trends — system-wide daily cycle-hire usage, 2022 → 2026."""
+"""System-wide daily cycle-hire usage from 2022 to 2026."""
 
 import altair as alt
 import data_access as da
@@ -7,8 +7,8 @@ import streamlit as st
 
 st.title("Usage trends")
 st.caption(
-    "41.4M journeys backfilled with Spark → Snowflake → dbt. This view reads the "
-    "gold `daily_journey_stats` rollup (one row per day)."
+    "This page reads the gold `daily_journey_stats` rollup, which contains one row per day "
+    "from the 41.4M-journey backfill."
 )
 
 lo, hi = da.date_bounds()
@@ -37,9 +37,8 @@ with st.container(horizontal=True):
     st.metric("Days covered", f"{len(df):,}", border=True)
 
 st.caption(
-    f"Across the selected range, **{ebike_share:.0%} of journeys are e-bike** and daily volume "
-    "swings strongly with the seasons — the trend below shows both the seasonal cycle and the "
-    "step change when the file format switched in Sept 2022."
+    f"E-bikes account for **{ebike_share:.0%} of journeys** in the selected range. The chart also "
+    "shows the seasonal cycle and the September 2022 file-format change."
 )
 
 if grain == "Monthly":
@@ -53,7 +52,7 @@ else:
 
 with st.container(border=True):
     st.subheader("Journeys over time")
-    st.caption("The step up in Sep 2022 is the real schema-era switch (classic → next-gen files).")
+    st.caption("The September 2022 step coincides with the switch from classic to nextgen files.")
     line = alt.Chart(plot).mark_line().encode(
         x=x, y=alt.Y("journeys:Q", title="Journeys"),
         tooltip=["period:T", "journeys:Q"],

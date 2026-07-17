@@ -30,7 +30,7 @@ jobs:
           python scripts/build_reliability_release.py
           --version "0.2.0"
           --managed-result "NARROW"
-          --target "45125f1e064f28ce03ef7e0f15acceb18c34604f"
+          --target "${{ github.sha }}"
           --output release-output
       - name: Create repository release
         env:
@@ -41,6 +41,6 @@ jobs:
           release-output/reliability-reference-v0.2.0.spdx.json
           release-output/release-manifest.json
           release-output/SHA256SUMS
-          --target "45125f1e064f28ce03ef7e0f15acceb18c34604f"
+          --target "${{ github.sha }}"
           --title "Reliability reference v0.2.0"
           --notes-file release-output/RELEASE_NOTES.md
