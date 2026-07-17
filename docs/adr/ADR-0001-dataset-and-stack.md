@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-07-07
-- **Context:** Gate 0 of the [build plan](../tfl-data-engineering-plan.md) required verifying
+- **Context:** Gate 0 required verifying
   both dataset candidates with real downloads before locking anything. Both were measured
   on 2026-07-07; raw evidence in [docs/gate0/](../gate0/).
 

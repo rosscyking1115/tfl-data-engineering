@@ -2,8 +2,8 @@
 
 - **Status:** Accepted
 - **Date:** 2026-07-08
-- **Supersedes:** the "time-boxed, stack-locked, no-web-app" framing of the original plan
-  (`docs/tfl-data-engineering-plan.md`), which remains as history.
+- **Supersedes:** the "time-boxed, stack-locked, no-web-app" framing of the original batch
+  build plan.
 
 ## Context
 
