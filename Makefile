@@ -35,9 +35,12 @@ daily:            ## the same steps the GitHub Actions cron runs
 	$(PY) ingestion/live_snapshot.py
 	$(PY) ingestion/journey_increment.py
 	$(PY) -m dbt.cli.main build --target duckdb --select +tag:analytics --project-dir dbt --profiles-dir dbt
+	$(PY) analysis/rigor.py
+	$(PY) analysis/certificate.py --verify app/gold_export/analysis_rigor.json
 
 analysis:         ## regenerate the rigour battery (CIs, placebo, sensitivity)
 	$(PY) analysis/rigor.py
+	$(PY) analysis/certificate.py --verify app/gold_export/analysis_rigor.json
 
 app:              ## run the Streamlit app on the committed Parquet
 	$(PY) -m streamlit run app/streamlit_app.py

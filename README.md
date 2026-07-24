@@ -11,6 +11,20 @@ Parquet and queries them through DuckDB, so there is no live warehouse to mainta
 
 **[Live demo](https://tfl-data-engineering.streamlit.app/)** · [Engineering notes](docs/) · [Architecture](#architecture)
 
+## Analyst investigation
+
+**Decision supported:** assess whether a verified, source-cited London Underground strike is
+associated with a material change in cycle-hire demand before treating disruption as an explanatory
+factor in analyst investigation. The locked ADR-0009 result is **an observed association, not
+causation**: the certified evidence reports 1.42× median station-day demand relative to its
+weather-adjusted expectation, with its existing uncertainty checks. See the
+[certified-evidence note](docs/certified_evidence.md) for source-to-consumer lineage.
+
+The workflow deliberately has two horizons: cited strikes support historical measurement; Line
+Status and BikePoint snapshots are forward-collected live monitoring. **GitHub Actions + committed
+Parquet/DuckDB** is the durable runtime. **Airflow is a local portfolio demonstration**, not the
+production scheduler.
+
 > This is one of three UK open-data projects on my profile. The other two are
 > [england-wales-housing-decision-support](https://github.com/rosscyking1115/england-wales-housing-decision-support)
 > (analytics engineering: Dagster, a fully tested dbt project, published dbt docs) and
@@ -96,9 +110,9 @@ flowchart TD
     ML --> G
     G --> APP[Streamlit app<br/>+ Ask assistant]
     G --> MCP[MCP server]
-    AF[[Airflow]] -.orchestrates.-> API
+    AF[[Airflow<br/>local portfolio demonstration]] -.orchestrates.-> API
     AF -.orchestrates.-> D
-    GH[[GitHub Actions]] -.daily runtime.-> API
+    GH[[GitHub Actions<br/>durable runtime]] -.daily runtime.-> API
 ```
 
 Medallion layers: **bronze** (files/JSON as landed) → **silver** (typed, deduped, era-unified) →
@@ -155,7 +169,7 @@ warehouse or credentials ([ADR-0004](docs/adr/ADR-0004-mcp-readonly-boundary.md)
 | Warehouse | Snowflake (build) → DuckDB + Parquet (durable, free) |
 | Transformation & tests | dbt |
 | Machine learning | LightGBM · MLflow · scikit-learn · FastAPI |
-| Orchestration | Airflow · GitHub Actions |
+| Orchestration | GitHub Actions (durable) · Airflow (local portfolio demonstration) |
 | App & AI access | Streamlit · Anthropic SDK · Model Context Protocol |
 | Enrichment | TfL Unified API · Open-Meteo |
 
@@ -198,6 +212,11 @@ tiers indefinitely. A second scheduled job
 ([.github/workflows/keepalive.yml](.github/workflows/keepalive.yml)) pings the app every few hours
 so visitors are less likely to encounter a cold start. This works around
 free tier, not a Streamlit limit.
+
+The local Airflow portfolio implementation keeps its alert boundary equally
+explicit: the daily-ingest, dbt-gate and archive-drift DAGs share a failure
+callback that always records a critical task-log event. A webhook is opt-in
+through a local environment variable and is not exercised by this project.
 
 ![Latest network status](docs/img/today.png)
 

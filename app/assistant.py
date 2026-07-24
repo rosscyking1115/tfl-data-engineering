@@ -69,9 +69,15 @@ def _daily_usage_trend(start_date: str, end_date: str) -> dict:
 
 
 def _disruption_impact() -> dict:
-    head = da.disruption_headline().to_dict(orient="records")
-    dates = da.disruption_dates().to_dict(orient="records")
-    return {"weather_adjusted_headline": head, "per_disruption_date": dates}
+    evidence = da.certified_evidence()
+    certificate = evidence["certificate"]
+    return {
+        "certificate_id": certificate["certificate_id"],
+        "claim_class": certificate["claim_class"],
+        "permitted_claim": certificate["permitted_claim"],
+        "headline": evidence["headline"],
+        "per_event_diagnostics": evidence.get("per_event", []),
+    }
 
 
 def _live_status() -> dict:
@@ -157,9 +163,9 @@ TOOLS = [
     },
     {
         "name": "disruption_impact",
-        "description": "How tube/rail strikes shifted cycling demand vs a weather-adjusted "
-        "baseline: the headline (normal vs disruption day ratios) and every known disruption "
-        "date with its actual/expected demand and ratio.",
+        "description": "The certified ADR-0009 observed association between source-cited Tube "
+        "strike days and cycle-hire demand. It is not a causal claim; includes certificate "
+        "metadata and per-event diagnostics, not a recalculated uplift.",
         "input_schema": {"type": "object", "properties": {}},
     },
     {

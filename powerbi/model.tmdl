@@ -73,6 +73,87 @@ table dim_station
 
 // ─────────────────────────────  Facts  ─────────────────────────────
 
+// Deliberately disconnected: certified ADR-0009 cards must not change under
+// date/station slicers. The rigor export, not DAX, owns this result.
+table certified_adr0009_evidence
+    column evidence_artifact
+        dataType: string
+        sourceColumn: evidence_artifact
+    column certificate_id
+        dataType: string
+        sourceColumn: certificate_id
+        isKey: true
+    column evidence_version
+        dataType: string
+        sourceColumn: evidence_version
+    column adr_id
+        dataType: string
+        sourceColumn: adr_id
+    column claim_class
+        dataType: string
+        sourceColumn: claim_class
+    column permitted_claim
+        dataType: string
+        sourceColumn: permitted_claim
+    column comparator_family
+        dataType: string
+        sourceColumn: comparator_family
+    column cited_strike_seed
+        dataType: string
+        sourceColumn: cited_strike_seed
+    column station_day_evidence
+        dataType: string
+        sourceColumn: station_day_evidence
+    column min_expected_departures
+        dataType: int64
+        sourceColumn: min_expected_departures
+    column headline_ratio
+        dataType: double
+        sourceColumn: headline_ratio
+    column ci95_lo
+        dataType: double
+        sourceColumn: ci95_lo
+    column ci95_hi
+        dataType: double
+        sourceColumn: ci95_hi
+    column n_events
+        dataType: int64
+        sourceColumn: n_events
+
+    partition certified_adr0009_evidence = m
+        mode: import
+        source = ```
+                let
+                    Source = Json.Document(File.Contents(GoldExportFolder & "\analysis_rigor.json")),
+                    Certificate = Source[certificate],
+                    Headline = Source[headline]
+                in
+                    #table({"evidence_artifact", "certificate_id", "evidence_version", "adr_id", "claim_class", "permitted_claim", "comparator_family", "cited_strike_seed", "station_day_evidence", "min_expected_departures", "headline_ratio", "ci95_lo", "ci95_hi", "n_events"}, {{"app/gold_export/analysis_rigor.json", Certificate[certificate_id], Certificate[evidence_version], Certificate[adr_id], Certificate[claim_class], Certificate[permitted_claim], Certificate[primary_specification][comparator_family], Certificate[primary_specification][strike_seed], "app/gold_export/demand_deviation.parquet", Certificate[primary_specification][min_expected_departures], Headline[median_ratio], Headline[ci95_lo], Headline[ci95_hi], Headline[n_events]}})
+            ```
+
+    measure 'Certified ADR-0009 Demand Ratio' =
+            MAX ( certified_adr0009_evidence[headline_ratio] )
+        formatString: 0.000
+        displayFolder: T-CERT
+        description: The locked ADR-0009 historical observed association. This is not calculated from report rows.
+
+    measure 'Certified ADR-0009 Lower CI' =
+            MAX ( certified_adr0009_evidence[ci95_lo] )
+        formatString: 0.000
+        displayFolder: T-CERT
+        description: Lower bound of the rigor-owned 95 percent confidence interval.
+
+    measure 'Certified ADR-0009 Upper CI' =
+            MAX ( certified_adr0009_evidence[ci95_hi] )
+        formatString: 0.000
+        displayFolder: T-CERT
+        description: Upper bound of the rigor-owned 95 percent confidence interval.
+
+    measure 'Certified ADR-0009 Claim' =
+            MAX ( certified_adr0009_evidence[permitted_claim] )
+        displayFolder: T-CERT
+        description: The permitted associational language from the evidence certificate.
+
 table daily_journey_stats
     column date_key
         dataType: int64

@@ -19,6 +19,32 @@ unit_tests:
         - {line_id: central, start_date: 2026-07-04, end_date: 2026-07-04, days_observed: 1, worst_severity: 5}
 
 models:
+  - name: certified_adr0009_evidence
+    description: >
+      Thin dbt lineage interface over the rigor-owned ADR-0009 certificate. It exposes
+      certified fields only and must not derive a second uplift formula.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [certificate_id]
+    columns:
+      - name: certificate_id
+        tests: [not_null, unique]
+      - name: adr_id
+        tests:
+          - accepted_values:
+              arguments: {values: ["ADR-0009"]}
+      - name: claim_class
+        tests:
+          - accepted_values:
+              arguments: {values: ["observed_association"]}
+      - name: headline_ratio
+        tests: [not_null]
+      - name: min_expected_departures
+        tests:
+          - accepted_values:
+              arguments: {values: [5]}
+
   - name: expected_demand
     description: Weather-adjusted expected daily departures per station × day-of-week × weather bucket.
     columns:

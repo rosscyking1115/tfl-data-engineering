@@ -43,10 +43,17 @@ def test_busiest_stations_lists_rows(monkeypatch):
 
 
 def test_strike_effect(monkeypatch):
-    df = pd.DataFrame({"day_type": ["Normal days", "Disruption days"],
-                       "n_dates": [1000, 15], "median_ratio": [1.0, 1.33]})
-    monkeypatch.setattr(da, "disruption_headline", lambda: df)
-    assert "1.33" in qa.strike_effect()
+    evidence = {
+        "certificate": {
+            "certificate_id": "tcert-adr0009-example",
+            "claim_class": "observed_association",
+            "permitted_claim": "Observed association only; not a causal effect.",
+        },
+        "headline": {"median_ratio": 1.423, "ci95_lo": 1.241, "ci95_hi": 1.608, "n_events": 13},
+    }
+    monkeypatch.setattr(da, "certified_evidence", lambda: evidence)
+    out = qa.strike_effect()
+    assert "1.42" in out and "Observed association" in out and "tcert-adr0009-example" in out
 
 
 def test_demand_trend(monkeypatch):

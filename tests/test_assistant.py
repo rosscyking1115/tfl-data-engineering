@@ -34,6 +34,23 @@ def test_live_status_tool(monkeypatch):
     assert out["not_good_service"][0]["line_name"] == "District"
 
 
+def test_disruption_impact_tool_returns_certificate_not_recomputed_headline(monkeypatch):
+    evidence = {
+        "certificate": {
+            "certificate_id": "tcert-adr0009-example",
+            "claim_class": "observed_association",
+            "permitted_claim": "Observed association only; not a causal effect.",
+        },
+        "headline": {"median_ratio": 1.423, "ci95_lo": 1.241, "ci95_hi": 1.608, "n_events": 13},
+        "per_event": [],
+    }
+    monkeypatch.setattr(da, "certified_evidence", lambda: evidence)
+    out = assistant._disruption_impact()
+    assert out["certificate_id"] == "tcert-adr0009-example"
+    assert out["headline"] == evidence["headline"]
+    assert "weather_adjusted_headline" not in out
+
+
 class _FakeResp:
     stop_reason = "end_turn"
 

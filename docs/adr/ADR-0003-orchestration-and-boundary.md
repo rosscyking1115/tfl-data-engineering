@@ -41,9 +41,10 @@ is symmetric — *the data size dictates the tool, in both directions.*
 
 ## Consequences
 
-- Failure alerting is shared across all DAGs via one `on_failure_callback`
-  (`dags/alert_utils.py`) and was **demonstrated** with a deliberate-failure DAG, not just
-  wired up.
+- Failure alerting is shared across the real local operational DAGs via one
+  `on_failure_callback` (`dags/alert_utils.py`): daily ingest, the dbt gate,
+  and the monthly archive-drift check. Its critical task-log event is the
+  local proof; a webhook remains opt-in and is not exercised by this project.
 - `monthly_history_check` re-lists the bulk bucket and fails if new journey files appear —
   turning "extend the backfill" into an automated nudge rather than a memory.
 - The whole orchestrated daily run (loads + full dbt build + 48 tests) costs ~0.15

@@ -12,6 +12,18 @@
 //
 // Power BI reads Parquet natively via Parquet.Document — no gateway, no credentials.
 
+// ── certified_adr0009_evidence (rigor-owned, disconnected certificate table) ──
+let
+    Source = Json.Document ( File.Contents ( GoldExportFolder & "\analysis_rigor.json" ) ),
+    Certificate = Source[certificate],
+    Headline = Source[headline],
+    Output = #table(
+        {"evidence_artifact", "certificate_id", "evidence_version", "adr_id", "claim_class", "permitted_claim", "comparator_family", "cited_strike_seed", "station_day_evidence", "min_expected_departures", "headline_ratio", "ci95_lo", "ci95_hi", "n_events"},
+        {{"app/gold_export/analysis_rigor.json", Certificate[certificate_id], Certificate[evidence_version], Certificate[adr_id], Certificate[claim_class], Certificate[permitted_claim], Certificate[primary_specification][comparator_family], Certificate[primary_specification][strike_seed], "app/gold_export/demand_deviation.parquet", Certificate[primary_specification][min_expected_departures], Headline[median_ratio], Headline[ci95_lo], Headline[ci95_hi], Headline[n_events]}}
+    )
+in
+    Output
+
 // ── daily_journey_stats ──
 let
     Source = Parquet.Document ( File.Contents ( GoldExportFolder & "\daily_journey_stats.parquet" ) )

@@ -39,21 +39,13 @@ def busiest_stations(year: int, by: str = "departures") -> str:
 
 
 def strike_effect() -> str:
-    """The headline disruption finding: how much strikes lift cycling vs a weather-adjusted normal."""
-    head = da.disruption_headline()
-    if head.empty:
-        return "The disruption baseline hasn't been built yet."
-    row = {r["day_type"]: r for _, r in head.iterrows()}
-    disr = row.get("Disruption days")
-    if disr is None:
-        return "No disruption days found in the data."
-    ratio = disr["median_ratio"]
-    uplift = (ratio - 1) * 100
+    """Return the certified ADR-0009 association without recalculating it."""
+    evidence = da.certified_evidence()
+    cert, head = evidence["certificate"], evidence["headline"]
     return (
-        f"On strike days, cycling runs at **{ratio:.2f}× a weather-adjusted normal**, about "
-        f"**{uplift:+.0f}%** more than a comparable non-strike day (median across "
-        f"{int(disr['n_dates'])} source-cited disruption days). Full network strikes surge up to "
-        f"~2.3×. A stations-only partial action and a knock-on day sit near baseline."
+        f"**{cert['permitted_claim']}** The certified ADR-0009 estimate is "
+        f"**{head['median_ratio']:.2f}×** (95% CI {head['ci95_lo']:.2f}–{head['ci95_hi']:.2f}; "
+        f"{head['n_events']} source-cited events). Certificate: `{cert['certificate_id']}`."
     )
 
 

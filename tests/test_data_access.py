@@ -18,3 +18,13 @@ def test_station_names_loads_committed_parquet():
 def test_date_bounds_returns_ordered_pair():
     lo, hi = da.date_bounds()
     assert pd.Timestamp(lo) <= pd.Timestamp(hi)
+
+
+def test_certified_evidence_has_locked_adr0009_envelope():
+    evidence = da.certified_evidence()
+    certificate = evidence["certificate"]
+    assert certificate["adr_id"] == "ADR-0009"
+    assert certificate["claim_class"] == "observed_association"
+    assert certificate["primary_specification"]["grain"] == "station × day"
+    assert certificate["primary_specification"]["min_expected_departures"] == 5
+    assert evidence["headline"]["median_ratio"] == 1.423

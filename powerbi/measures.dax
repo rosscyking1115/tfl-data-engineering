@@ -35,20 +35,20 @@ Net Inflow       = SUM ( station_daily_flows[net_inflow] )   // arrivals − dep
 // Weather-adjusted: deviation_ratio = actual / expected_departures. Filter expected >= 5 to
 // drop tiny/noisy stations, matching the app. 1.00 = exactly expected.
 
-Disruption Demand Ratio =
-MEDIANX (
-    FILTER ( demand_deviation, demand_deviation[is_disruption] = TRUE () && demand_deviation[expected_departures] >= 5 ),
-    demand_deviation[deviation_ratio]
-)   // reference (all dates): 1.423 (13 source-cited events, post citation-audit)
+Certified ADR-0009 Demand Ratio =
+MAX ( certified_adr0009_evidence[headline_ratio] )
 
-Normal Demand Ratio =
-MEDIANX (
-    FILTER ( demand_deviation, demand_deviation[is_disruption] = FALSE () && demand_deviation[expected_departures] >= 5 ),
-    demand_deviation[deviation_ratio]
-)   // reference (all dates): 1.000
+Certified ADR-0009 Lower CI =
+MAX ( certified_adr0009_evidence[ci95_lo] )
 
-Disruption Uplift % = [Disruption Demand Ratio] - 1
-    // reference: ~0.33 (a strike day runs ~33% above a comparable normal day)
+Certified ADR-0009 Upper CI =
+MAX ( certified_adr0009_evidence[ci95_hi] )
+
+Certified ADR-0009 Claim =
+MAX ( certified_adr0009_evidence[permitted_claim] )
+
+// Event and station visuals remain row-level diagnostics. Do not aggregate them into
+// a DAX disruption headline; the disconnected certificate table is the only ADR-0009 result.
 
 // ────────────────  Demand forecast (LightGBM vs median)  ────────────
 // Mean absolute error of each baseline vs actual departures. Lower is better.

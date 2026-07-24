@@ -40,6 +40,12 @@ jobs:
           dbt build --target duckdb --select +tag:analytics --project-dir dbt --profiles-dir dbt
           dbt source freshness --target duckdb --project-dir dbt --profiles-dir dbt
 
+      - name: Regenerate certified ADR-0009 evidence
+        run: python analysis/rigor.py
+
+      - name: Validate certified ADR-0009 evidence
+        run: python analysis/certificate.py --verify app/gold_export/analysis_rigor.json
+
       - name: Append run metadata
         run: python ingestion/run_log.py
 

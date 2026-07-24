@@ -1,6 +1,39 @@
 version: 2
 
+unit_tests:
+  - name: dim_station_history_versions_a_changed_capacity
+    model: dim_station_history
+    given:
+      - input: ref('stg_bikepoint_snapshot')
+        rows:
+          - {snapshot_date: 2026-07-01, bikepoint_id: 42, common_name: Test Dock, lat: 51.5000, lon: -0.1200, n_docks: 20, installed: true, locked: false}
+          - {snapshot_date: 2026-07-02, bikepoint_id: 42, common_name: Test Dock, lat: 51.5000, lon: -0.1200, n_docks: 20, installed: true, locked: false}
+          - {snapshot_date: 2026-07-03, bikepoint_id: 42, common_name: Test Dock, lat: 51.5000, lon: -0.1200, n_docks: 22, installed: true, locked: false}
+    expect:
+      rows:
+        - {bikepoint_id: 42, common_name: Test Dock, lat: 51.5000, lon: -0.1200, n_docks: 20, installed_state: "true", locked_state: "false", valid_from: 2026-07-01, valid_to: 2026-07-03, is_current: false}
+        - {bikepoint_id: 42, common_name: Test Dock, lat: 51.5000, lon: -0.1200, n_docks: 22, installed_state: "true", locked_state: "false", valid_from: 2026-07-03, valid_to: null, is_current: true}
+
 models:
+  - name: dim_station_history
+    description: >
+      BikePoint station attributes versioned at bikepoint_id x attribute-version grain.
+      It is separate from journey dim_station because the source-name mapping is not
+      universally conforming.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [bikepoint_id, valid_from]
+    columns:
+      - name: bikepoint_id
+        tests: [not_null]
+      - name: valid_from
+        tests: [not_null]
+      - name: is_current
+        tests:
+          - accepted_values:
+              arguments: {values: [true, false]}
+
   - name: dim_station
     description: Stations unified across both ID regimes by cleaned name (ADR-0002 context).
     columns:
@@ -75,7 +108,7 @@ models:
       - name: mode
         tests:
           - accepted_values:
-              values: ["tube", "dlr", "overground", "elizabeth-line", "tram"]
+              arguments: {values: ["tube", "dlr", "overground", "elizabeth-line", "tram"]}
       - name: date_key
         tests:
           - not_null
