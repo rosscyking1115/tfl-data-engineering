@@ -8,7 +8,6 @@ from pathlib import Path
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-
 from alert_utils import DEFAULT_ARGS
 
 INVENTORY = Path("/repo/docs/gate0/cycle_file_inventory.csv")

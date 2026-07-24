@@ -88,21 +88,6 @@ def _dev_path() -> str:
 
 
 @st.cache_data(ttl="1h")
-def disruption_headline() -> pd.DataFrame:
-    """Weather-adjusted median demand ratio: disruption days vs normal days."""
-    return duckdb.connect().execute(
-        f"""
-        select case when is_disruption then 'Disruption days' else 'Normal days' end as day_type,
-               count(distinct date_key) as n_dates,
-               round(median(deviation_ratio), 3) as median_ratio
-        from read_parquet('{_dev_path()}')
-        where expected_departures >= 5
-        group by 1 order by 1
-        """
-    ).df()
-
-
-@st.cache_data(ttl="1h")
 def disruption_dates() -> pd.DataFrame:
     """Per disruption date: system actual vs weather-adjusted expected + ratio."""
     return duckdb.connect().execute(
@@ -201,6 +186,43 @@ def rigor_results() -> dict:
     if not path.exists():
         return {}
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+@st.cache_data(ttl="1h")
+def certified_evidence() -> dict:
+    """The sole certified ADR-0009 result, produced by analysis/rigor.py.
+
+    Presentation code consumes this export directly. It must not recreate the station-day
+    median, uncertainty, or comparator definition from demand_deviation.parquet.
+    """
+    evidence = rigor_results()
+    if not evidence.get("certificate"):
+        raise ValueError("ADR-0009 certificate envelope is missing")
+    return evidence
+
+
+@st.cache_data(ttl="1h")
+def per_event_diagnostics() -> pd.DataFrame:
+    """Rigor-produced event diagnostics, deliberately separate from the certified headline."""
+    return pd.DataFrame(certified_evidence().get("per_event", []))
+
+
+@st.cache_data(ttl="1h")
+def certified_evidence_lineage() -> dict:
+    """Human-readable provenance for consumers of the certified result.
+
+    This is metadata only: the rigor export remains the owner of the statistic.
+    """
+    certificate = certified_evidence()["certificate"]
+    primary = certificate["primary_specification"]
+    return {
+        "evidence_artifact": "app/gold_export/analysis_rigor.json",
+        "source_cited_strike_seed": primary["strike_seed"],
+        "station_day_evidence": "app/gold_export/demand_deviation.parquet",
+        "forward_event_log": "app/gold_export/disruption_events.parquet",
+        "evidence_version": certificate["evidence_version"],
+        "certificate_id": certificate["certificate_id"],
+    }
 
 
 # --- Live layer (live_*.parquet, refreshed by the daily GitHub Action) ---

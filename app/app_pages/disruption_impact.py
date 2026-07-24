@@ -14,41 +14,37 @@ st.caption(
     "from ordinary weather variation."
 )
 
-# --- Headline: the whole story in two numbers -------------------------------------------
-head = da.disruption_headline()
-rigor = da.rigor_results()
-if not head.empty:
-    ratios = {r["day_type"]: r for _, r in head.iterrows()}
-    normal = ratios.get("Normal days")
-    disr = ratios.get("Disruption days")
-    hl = rigor.get("headline", {})
+# --- Certified headline ---------------------------------------------------------------
+rigor = da.certified_evidence()
+lineage = da.certified_evidence_lineage()
+certificate = rigor["certificate"]
+hl = rigor["headline"]
+if hl:
     with st.container(horizontal=True):
-        if normal is not None:
-            st.metric(
-                "A normal day", f"{normal['median_ratio']:.2f}× demand", border=True,
-                help=f"Baseline median across {int(normal['n_dates'])} normal days",
-            )
-        if disr is not None:
-            uplift = (disr["median_ratio"] - 1) * 100
-            ci = (f"95% CI {hl['ci95_lo']:.2f}–{hl['ci95_hi']:.2f}×"
-                  if hl else f"median across {int(disr['n_dates'])} disruption days")
-            st.metric(
-                "A strike day", f"{disr['median_ratio']:.2f}× demand",
-                delta=f"{uplift:+.0f}% vs normal", border=True,
-                help=f"{ci} · cluster bootstrap over event days (ADR-0009)",
-            )
-    cap = ("Read as a multiple of normal: **1.00× = exactly expected**, so 1.42× means 42% "
-           "more cycling than a comparable non-strike day.")
-    if hl:
-        cap += (f" The 95% confidence interval is **{hl['ci95_lo']:.2f}–{hl['ci95_hi']:.2f}×** "
-                f"(bootstrap over the {hl['n_events']} event days).")
-    st.caption(cap)
-
+        st.metric(
+            "Certified strike-day association", f"{hl['median_ratio']:.2f}× demand", border=True,
+            help=(f"95% CI {hl['ci95_lo']:.2f}–{hl['ci95_hi']:.2f}×; "
+                  f"bootstrap over {hl['n_events']} event days (ADR-0009)"),
+        )
+    st.caption(certificate["permitted_claim"])
     st.caption(
-        ":material/balance: **This is an observed association, not a causal claim.** Strike "
-        "days are compared with a weather-adjusted normal under stated assumptions "
-        "([the analytical contract](https://github.com/rosscyking1115/tfl-data-engineering/blob/main/docs/adr/ADR-0009-analytical-contract.md))."
+        f"Certificate `{certificate['certificate_id']}` · {certificate['evidence_version']} · "
+        f"comparator: {certificate['primary_specification']['comparator_family']} · "
+        f"eligible station-days: expected departures ≥ "
+        f"{certificate['primary_specification']['min_expected_departures']}."
     )
+    with st.expander("Evidence lineage", icon=":material/account_tree:"):
+        st.markdown(
+            "The certified result is read from the versioned rigor export; this page does not "
+            "recalculate it from station-day data."
+        )
+        st.markdown(
+            f"- **Source-cited strike seed:** `{lineage['source_cited_strike_seed']}`\n"
+            f"- **Station × day evidence:** `{lineage['station_day_evidence']}`\n"
+            f"- **Certified artifact:** `{lineage['evidence_artifact']}`\n"
+            f"- **Forward disruption log:** `{lineage['forward_event_log']}` — collected forward "
+            "only, so it is diagnostic rather than deep historical coverage."
+        )
 
 if rigor:
     with st.expander("Placebo and sensitivity checks", icon=":material/science:"):
@@ -78,9 +74,9 @@ if rigor:
             )
 
 # --- Every strike day, ranked --------------------------------------------------------------
-st.subheader("Every strike day, ranked by how much cycling jumped")
-dates = da.disruption_dates()
-dates["day"] = pd.to_datetime(dates["date_day"]).dt.strftime("%d %b %Y")
+st.subheader("Per-event diagnostic ratios")
+dates = da.per_event_diagnostics()
+dates["day"] = pd.to_datetime(dates["date"]).dt.strftime("%d %b %Y")
 
 bars = alt.Chart(dates).mark_bar().encode(
     x=alt.X("ratio:Q", title="Cycling demand vs a normal day  (1.0 = normal)"),
@@ -97,19 +93,16 @@ bars = alt.Chart(dates).mark_bar().encode(
 rule = alt.Chart(dates).mark_rule(color=RED, strokeDash=[4, 4]).encode(x=alt.datum(1.0))
 st.altair_chart(bars + rule, width="stretch")
 st.caption(
-    "Blue = more cycling than normal; the dashed red line is a normal day. Every full network "
-    "strike lifts demand. The near-baseline days are a stations-only partial action "
-    "(25 Nov 2022) and a residual knock-on day. "
-    "Each event is source-cited in the repo; a citation audit removed two January 2024 dates "
-    "whose strike was called off."
+    "Diagnostic only — each bar is a rigor-produced event-level system actual/expected ratio, "
+    "not the certified ADR-0009 median station-day headline. The cited strike seed is unchanged."
 )
 
 # --- Where the demand landed ---------------------------------------------------------------
 st.subheader("Where the extra bikes were hired, station by station")
-options = dates.sort_values("date_day", ascending=False)
+options = dates.sort_values("date", ascending=False)
 picked = st.selectbox(
     "Pick a strike day",
-    options["date_day"].astype(str).tolist(),
+    options["date"].astype(str).tolist(),
     format_func=lambda d: pd.to_datetime(d).strftime("%d %b %Y"),
 )
 movers = da.top_movers_on(picked)
@@ -129,6 +122,6 @@ else:
     ).properties(height=460)
     st.altair_chart(chart, width="stretch")
     st.caption(
-        "Each bar is one docking station's extra hires that day versus its own weather-adjusted "
-        "normal. The largest increases are around Tube interchanges and business districts."
+        "Diagnostic only — each bar is one station's observed deviation from its weather-adjusted "
+        "baseline for the selected event. It is not the certified ADR-0009 headline."
     )

@@ -33,9 +33,13 @@ Snowflake credentials.
    `daily_journey_stats[date_key] → dim_date[date_key]`,
    `demand_deviation[date_key] → dim_date[date_key]`, `[station_key] → dim_station[station_key]`,
    and the same two for `demand_deviation_ml`.
-5. Paste each measure from [`measures.dax`](measures.dax) (*Modeling → New measure*). Confirm a
-   card of **Disruption Demand Ratio** shows **≈ 1.42** and **Forecast Improvement %** ≈ **33%** to
-   confirm that the model loaded correctly.
+5. Paste each measure from [`measures.dax`](measures.dax) (*Modeling → New measure*). Use the
+   disconnected **Certified ADR-0009 Demand Ratio** card for the locked result (**≈ 1.42**); it
+   must not change under date or station slicers. The `demand_deviation` measures are explicitly
+   diagnostic and slicer-sensitive. Confirm **Forecast Improvement %** ≈ **33%** separately.
+   The certificate table also exposes the evidence artifact, source-cited strike seed and station-day
+   evidence so the report can show its lineage without a second formula. The forward-only disruption
+   log remains a separate operational diagnostic, never a historical-headline input.
 6. Build the pages below, then *Publish* (or screenshot for the repo).
 
 *Advanced:* Tabular Editor users can work from [`model.tmdl`](model.tmdl) instead of steps 3–5.
@@ -45,9 +49,9 @@ Snowflake credentials.
 1. **Usage trends:** cards for *Total Journeys*, *E-bike Share %* and *Avg Duration (min)*; a
    journeys-per-day line by `dim_date[date_day]` (the Sept-2022 era switch is visible); a
    weekday-vs-weekend bar (`dim_date[is_weekend]`).
-2. **Disruption impact:** cards for *Normal Demand Ratio* (≈1.00) versus *Disruption Demand
-   Ratio* (≈1.42) and *Disruption Uplift %*; a bar of `deviation_ratio` by disruption date with a
-   reference line at 1.0.
+2. **Disruption impact:** a *Certified ADR-0009 Demand Ratio* card with its confidence-interval
+   measures and permitted associational claim. A bar of `deviation_ratio` by disruption date is a
+   diagnostic visual, not an alternative certified headline.
 3. **Today's network:** a table of the latest not-good-service lines
    (`live_line_status`, filtered to *Latest Snapshot*, showing `line_name`, `status_description`,
    `reason`); cards *Docks Empty Now* / *Docks Full Now*; a histogram of `fill_rate`. A map is

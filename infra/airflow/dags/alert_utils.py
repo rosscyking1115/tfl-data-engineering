@@ -4,6 +4,7 @@ from the task log alone."""
 
 import logging
 import os
+from datetime import timedelta
 
 import requests
 
@@ -26,4 +27,9 @@ def notify_failure(context) -> None:
             log.critical("alert webhook FAILED to deliver: %s", exc)
 
 
-DEFAULT_ARGS = {"owner": "tfl", "retries": 0, "on_failure_callback": notify_failure}
+DEFAULT_ARGS = {
+    "owner": "tfl",
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5),
+    "on_failure_callback": notify_failure,
+}

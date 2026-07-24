@@ -1,0 +1,24 @@
+version: 2
+
+exposures:
+  - name: streamlit_certified_adr0009
+    type: application
+    owner:
+      name: TfL cycle-hire analytics
+    description: >
+      Streamlit reads the same rigor-owned analysis_rigor.json artifact represented by
+      certified_adr0009_evidence. The page displays provenance only; it does not calculate
+      an uplift from station-day data.
+    depends_on:
+      - ref('certified_adr0009_evidence')
+
+  - name: powerbi_certified_adr0009
+    type: dashboard
+    owner:
+      name: TfL cycle-hire analytics
+    description: >
+      Power BI imports the rigor-owned analysis_rigor.json artifact into a disconnected
+      certificate table. Its certified cards must not be rebuilt from DAX or affected by
+      date or station slicers.
+    depends_on:
+      - ref('certified_adr0009_evidence')

@@ -34,6 +34,7 @@ from pathlib import Path
 import duckdb
 import numpy as np
 import pandas as pd
+from certificate import build_certificate
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPORT = ROOT / "app" / "gold_export"
@@ -280,20 +281,47 @@ def main() -> None:
     placebo = placebo_null(med, rng)
     sensitivity = sensitivity_battery()
 
-    result = {
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-        "seed": SEED,
-        "method": "cluster bootstrap over event days; dow-matched placebo; see ADR-0009",
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    journey_coverage = {
+        "min_date": str(med["date_day"].min().date()),
+        "max_date": str(med["date_day"].max().date()),
+        "station_day_rows": int(len(med)),
+        "stations": int(med["station_key"].nunique()),
+    }
+    analysis_configuration = {
+        "random_seed": SEED,
+        "headline_cluster_bootstrap": {
+            "unit": "event_day",
+            "replicates": N_BOOT,
+            "ci_method": "percentile_95",
+        },
+        "placebo": {"draws": N_PLACEBO, "day_of_week_matched": True},
+        "event_count": int(med.loc[med["is_disruption"], "date_day"].nunique()),
+    }
+    certified_result = {
         "headline": {
             "median_ratio": round(headline, 3),
             "ci95_lo": round(ci_lo, 3),
             "ci95_hi": round(ci_hi, 3),
-            "n_events": int(med.loc[med["is_disruption"], "date_day"].nunique()),
+            "n_events": analysis_configuration["event_count"],
             "n_bootstrap": N_BOOT,
         },
         "per_event": events,
         "placebo": placebo,
         "sensitivity": sensitivity,
+    }
+    result = {
+        "generated_at": generated_at,
+        "certificate": build_certificate(
+            ROOT,
+            generated_at=generated_at,
+            journey_coverage=journey_coverage,
+            analysis_configuration=analysis_configuration,
+            certified_result=certified_result,
+        ),
+        "seed": SEED,
+        "method": "cluster bootstrap over event days; dow-matched placebo; see ADR-0009",
+        **certified_result,
         "spatial": spatial_section(),
     }
     OUT.write_text(json.dumps(result, indent=2), encoding="utf-8")
