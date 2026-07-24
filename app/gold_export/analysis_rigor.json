@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-23T17:53:01Z",
+  "generated_at": "2026-07-24T17:17:39Z",
   "certificate": {
     "certificate_schema_version": "1.0",
     "evidence_version": "tcert-adr0009-v1",
-    "certificate_id": "tcert-adr0009-8a3380b7af34",
+    "certificate_id": "tcert-adr0009-ba640c07c2bb",
     "adr_id": "ADR-0009",
-    "adr_document_sha256": "610c655275096994cc2efe41f4c024c8cdca259c91505f3730be0e952fc244c2",
-    "generated_at_utc": "2026-07-23T17:53:01Z",
+    "adr_document_sha256": "930d4324293feea950a142ca8893f3b92f46ab925812de52ab2dcd3cb95a83d4",
+    "generated_at_utc": "2026-07-24T17:17:39Z",
     "claim_class": "observed_association",
     "permitted_claim": "On days with a verified, source-cited London Underground strike, Santander cycle-hire demand runs at a median 1.42\u00d7 its weather-adjusted expectation. This is an observed association, not a causal effect.",
     "primary_specification": {
@@ -50,9 +50,9 @@
       "app/gold_export/demand_deviation_ml.parquet": "a42b6c4bc3a752cca399baf6d78215b24207866641a861c663245360c52f0061",
       "app/gold_export/station_daily_flows.parquet": "ab6e12a3e744423a24aa9a6098455184a9ffd85fa7d08b3c0506e8411f6289f4",
       "app/gold_export/weather_daily.parquet": "8d98dddb37829d87c08d61cbb209fe194ec7732caa7eda441e298590cc8db63a",
-      "dbt/seeds/disruption_dates.csv": "031f1a7f4102d290367b972b94bcb2c29fdb180896b6cd568dde583da8c712ed"
+      "dbt/seeds/disruption_dates.csv": "ed78033e4083ae23cc86ab37ba4b2f8749c7d169d3cef8c79e81bc130d98f372"
     },
-    "code_sha256": "1c3135afdcede93b86e684f0263cb1cfdc58a6e26c7e127ca7f13bbc3b1adf1e"
+    "code_sha256": "61b091ec26eddfb85d8498d4d8d287b0421365e64771b2bb55615dd0f749532c"
   },
   "seed": 42,
   "method": "cluster bootstrap over event days; dow-matched placebo; see ADR-0009",

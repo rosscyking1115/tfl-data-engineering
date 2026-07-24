@@ -26,6 +26,15 @@ def test_certificate_rejects_a_tampered_input_hash():
         raise AssertionError("tampered certificate must be rejected")
 
 
+def test_versioned_text_hash_ignores_checkout_line_endings(tmp_path):
+    lf = tmp_path / "lf.csv"
+    crlf = tmp_path / "crlf.csv"
+    lf.write_bytes(b"date,source_url\ndate,https://example.test\n")
+    crlf.write_bytes(b"date,source_url\r\ndate,https://example.test\r\n")
+
+    assert certificate.sha256_versioned_text(lf) == certificate.sha256_versioned_text(crlf)
+
+
 def test_certificate_rejects_a_changed_isolated_analysis_input(tmp_path, monkeypatch):
     """A changed analysis input, not merely a tampered envelope, must invalidate evidence."""
     monkeypatch.setattr(certificate, "INPUT_PATHS", ("fixture_input.txt",))

@@ -27,14 +27,28 @@ INPUT_PATHS = (
     "app/gold_export/weather_daily.parquet",
     "dbt/seeds/disruption_dates.csv",
 )
+VERSIONED_TEXT_INPUT_PATHS = frozenset({"dbt/seeds/disruption_dates.csv"})
 
 
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def sha256_versioned_text(path: Path) -> str:
+    # Hash version-controlled text independently of checkout line endings.
+    content = path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
 def input_hashes(root: Path) -> dict[str, str]:
-    return {relative: sha256_file(root / relative) for relative in INPUT_PATHS}
+    return {
+        relative: (
+            sha256_versioned_text(root / relative)
+            if relative in VERSIONED_TEXT_INPUT_PATHS
+            else sha256_file(root / relative)
+        )
+        for relative in INPUT_PATHS
+    }
 
 
 def certified_result_payload(evidence: dict) -> dict:
@@ -76,14 +90,14 @@ def build_certificate(
 ) -> dict:
     """Build provenance for the existing rigor result without calculating it."""
     hashes = input_hashes(root)
-    code_sha256 = sha256_file(root / "analysis" / "rigor.py")
+    code_sha256 = sha256_versioned_text(root / "analysis" / "rigor.py")
     result_sha256 = certified_result_sha256(certified_result)
     return {
         "certificate_schema_version": SCHEMA_VERSION,
         "evidence_version": "tcert-adr0009-v1",
         "certificate_id": _certificate_id(hashes, code_sha256, analysis_configuration, result_sha256),
         "adr_id": ADR_ID,
-        "adr_document_sha256": sha256_file(root / "docs" / "adr" / "ADR-0009-analytical-contract.md"),
+        "adr_document_sha256": sha256_versioned_text(root / "docs" / "adr" / "ADR-0009-analytical-contract.md"),
         "generated_at_utc": generated_at,
         "claim_class": CLAIM_CLASS,
         "permitted_claim": PERMITTED_CLAIM,
@@ -146,8 +160,8 @@ def validate_certificate(evidence: dict, root: Path) -> None:
     recorded_inputs = certificate.get("input_sha256", {})
     for relative, digest in expected_inputs.items():
         _require(recorded_inputs.get(relative) == digest, f"hash mismatch: {relative}")
-    _require(certificate.get("code_sha256") == sha256_file(root / "analysis" / "rigor.py"), "hash mismatch: analysis/rigor.py")
-    _require(certificate.get("adr_document_sha256") == sha256_file(root / "docs" / "adr" / "ADR-0009-analytical-contract.md"), "hash mismatch: ADR-0009")
+    _require(certificate.get("code_sha256") == sha256_versioned_text(root / "analysis" / "rigor.py"), "hash mismatch: analysis/rigor.py")
+    _require(certificate.get("adr_document_sha256") == sha256_versioned_text(root / "docs" / "adr" / "ADR-0009-analytical-contract.md"), "hash mismatch: ADR-0009")
     _require(
         certificate.get("certificate_id")
         == _certificate_id(recorded_inputs, certificate["code_sha256"], expected_configuration, result_sha256),
