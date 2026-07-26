@@ -34,3 +34,8 @@ dbt/.user.yml
 
 # Local editor/agent tooling config (preview launch, local settings)
 .claude/
+
+# Internal agent planning docs — kept out of this PUBLIC repo per the release-wave
+# public-hygiene rule (internal plans/notes are never published).
+AGENTS.md
+docs/superpowers/
