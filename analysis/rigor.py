@@ -91,6 +91,10 @@ def per_event_cis(df: pd.DataFrame, rng: np.random.Generator) -> list[dict]:
     d = df[df["is_disruption"] & (df["expected_departures"] >= MIN_EXPECTED)]
     out = []
     for day, g in d.groupby("date_day"):
+        # Sort within the day before resampling. The bootstrap draws POSITIONS, so without a
+        # stable within-day order the same seed picks different stations whenever the input
+        # Parquet's row order changes — reporting plan noise as uncertainty (ADR-0014).
+        g = g.sort_values("station_key")
         act = g["departures"].to_numpy(float)
         exp = g["expected_departures"].to_numpy(float)
         ratio = act.sum() / exp.sum()

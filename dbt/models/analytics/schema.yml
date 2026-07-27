@@ -47,6 +47,11 @@ models:
 
   - name: expected_demand
     description: Weather-adjusted expected daily departures per station × day-of-week × weather bucket.
+    # Proves the export's ORDER BY key is a TOTAL order, so the Parquet bytes are
+    # reproducible and the ADR-0009 certificate can pin them (ADR-0014).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [station_key, dow, is_wet, is_cold]
     columns:
       - name: expected_departures
         tests:
@@ -57,6 +62,9 @@ models:
 
   - name: demand_deviation
     description: Actual vs weather-adjusted expected departures, per station per day, disruption-flagged.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [date_key, station_key]
     columns:
       - name: station_key
         tests: [not_null]
@@ -89,6 +97,9 @@ models:
 
   - name: demand_deviation_ml
     description: Actual vs the LightGBM counterfactual baseline, per station per day, disruption-flagged.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [date_key, station_key]
     columns:
       - name: station_key
         tests: [not_null]
@@ -99,6 +110,38 @@ models:
           - not_null
           - dbt_utils.accepted_range: { min_value: 0, inclusive: true }
       - name: expected_departures
+        tests:
+          - not_null
+          - dbt_utils.accepted_range: { min_value: 0, inclusive: true }
+
+  - name: stg_station_footfall
+    description: >
+      Daily RAIL entry/exit tap counts per station, from TfL's crowding bucket. Refreshed
+      within days rather than the journey extracts' 1-2 months, so it is the live layer's
+      context series. It is NOT cycle-hire evidence: taps are gate events on the rail
+      network, a different measure over a different population, and nothing joins it to
+      dim_station (ADR-0013).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [date_key, rail_station]
+    columns:
+      - name: date_key
+        tests: [not_null]
+      - name: travel_date
+        tests: [not_null]
+      - name: rail_station
+        tests: [not_null]
+      - name: day_of_week
+        description: The source spells this DayOFWeek before 2023 and DayOfWeek after; both map here.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+      - name: entry_taps
+        tests:
+          - not_null
+          - dbt_utils.accepted_range: { min_value: 0, inclusive: true }
+      - name: exit_taps
         tests:
           - not_null
           - dbt_utils.accepted_range: { min_value: 0, inclusive: true }

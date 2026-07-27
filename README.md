@@ -77,7 +77,12 @@ the median was **1.42×** a weather-adjusted baseline.
 - **Certified evidence.** [`analysis/certificate.py`](analysis/certificate.py) SHA-256-pins the
   ADR-0009 text, the five analysis inputs, the analysis code and the result payload into a single
   certificate ID, so a consumer cannot quietly re-derive the headline number. A drifted input, a
-  changed comparator family or an edited ADR fails verification. The dbt exposures name the two
+  changed comparator family or an edited ADR fails verification. Pinning bytes only means
+  something if the bytes are reproducible, so every export imposes a total order over a
+  dbt-proven unique key — three consecutive rebuilds now produce byte-identical artefacts — and
+  the certificate also pins an order-independent content fingerprint, so a failure says whether
+  the *data* changed or merely its row order
+  ([ADR-0014](docs/adr/ADR-0014-byte-reproducible-certified-inputs.md)). The dbt exposures name the two
   consumers and instruct that the Power BI certified cards must not be rebuilt from DAX or
   affected by date or station slicers ([certified-evidence
   note](docs/certified_evidence.md)).
@@ -92,6 +97,14 @@ the median was **1.42×** a weather-adjusted baseline.
 - **Free daily runtime.** A GitHub Actions job refreshes live line status and dock
   occupancy into committed Parquet. The app reads it through DuckDB, so it keeps
   running long after the Snowflake trial ends.
+- **Station footfall context series.** Daily rail entry/exit tap counts from TfL's crowding
+  bucket — 1.17M rows over 439 stations from 2019, 5.3 MB as Parquet. It is re-published within
+  days rather than the journey extracts' 1–2 months, so it narrows the lag the workflow has to
+  work around. It is **context, not evidence**: taps are rail gate events, a different measure
+  over a different population from cycle hire, so nothing joins it to `dim_station` and it feeds
+  no claim ([ADR-0013](docs/adr/ADR-0013-station-footfall-context-series.md)). The published
+  files overlap and drift their header case between eras; both are handled by name and
+  documented in [source contracts](docs/source_contracts.md).
 - **Slowly-changing station dimension.** `dim_station_history` is a real SCD2 over BikePoint
   snapshots: an attribute signature over name, position, dock count, installed and locked state;
   change detection by `lag()`; version numbering by running sum; emitting `valid_from`,
@@ -100,12 +113,12 @@ the median was **1.42×** a weather-adjusted baseline.
   version. Its header records why it is deliberately **not** bridged to the journey-era
   `dim_station`: BikePoint names do not always conform to journey-file names, so a forced join
   would overstate identity certainty.
-- **Tested dimensional model.** A dbt star schema (16 models) carries **78 data tests** — 54
-  built-in, 16 `dbt_utils`, and 8 singular tests for the things generic tests cannot express:
+- **Tested dimensional model.** A dbt star schema (17 models) carries **92 data tests** — 61
+  built-in, 22 `dbt_utils`, and 9 singular tests for the things generic tests cannot express:
   flow-to-daily reconciliation, journey-calendar completeness, snapshot-log gaps, one current
   SCD2 version per station, and a source URL on every seeded strike. Two **dbt unit tests**
-  check model logic against mock rows, and `dbt source freshness` covers all 7 sources.
-  Alongside it runs a **109-test pytest suite** across 15 files: pipeline guards (idempotency,
+  check model logic against mock rows, and `dbt source freshness` covers all 8 sources.
+  Alongside it runs a **129-test pytest suite** across 17 files: pipeline guards (idempotency,
   injected errors, an ML leakage guard), the evidence-certificate contract, and the
   reliability-reference conformance checks. The full DAG runs on both Snowflake (the documented
   build) and DuckDB. The rebuild **reconciles exactly**
@@ -127,7 +140,8 @@ flowchart TD
     A[retained TfL extracts<br/>148 files · 41.4M journeys] -->|PySpark backfill| S[(Warehouse<br/>silver · 41.4M journeys)]
     API[TfL Unified API<br/>BikePoint + Line Status] -->|Python daily loader| S
     W[Open-Meteo<br/>weather] --> S
-    S --> D{dbt<br/>16 models + 78 tests}
+    FF[TfL crowding bucket<br/>station footfall] -.context only.-> D
+    S --> D{dbt<br/>17 models + 92 tests}
     D --> G[(Gold star schema<br/>+ demand-deviation)]
     G --> ML[LightGBM forecast<br/>MLflow · FastAPI]
     ML --> G
@@ -242,10 +256,16 @@ no warehouse or persistent server and runs on free tiers indefinitely.
 > **Which workflow gates what.** The dbt tests gate *delivery*, not pull requests. They run in
 > `daily.yml` ahead of the commit step, so failing data is never published. The CI badge at the
 > top of this README is [`ci.yml`](.github/workflows/ci.yml), which runs on every push and pull
-> request and covers ruff, the 109-test pytest suite and the cross-engine conformance
+> request and covers ruff, the 129-test pytest suite and the cross-engine conformance
 > benchmarks — it does not run dbt.
 
-A second scheduled job
+Station footfall runs on its **own weekly trigger**
+([.github/workflows/footfall.yml](.github/workflows/footfall.yml)), not the daily one, because
+the source is re-published every few days — on a daily schedule it would commit nothing most
+mornings. It is deliberately narrow: it fetches the rolling file, builds and tests only its own
+model, and never touches the ADR-0009 certified inputs.
+
+A third scheduled job
 ([.github/workflows/keepalive.yml](.github/workflows/keepalive.yml)) pings the app every few hours
 so visitors are less likely to encounter a cold start. This works around
 free tier, not a Streamlit limit.
@@ -292,7 +312,10 @@ conformance claim is made, and DuckDB/Spark `0.2.0` remains the supported suite.
 - [ADR-0010](docs/adr/ADR-0010-migration-retrospective.md): the completed Snowflake-to-DuckDB migration
 - [ADR-0011](docs/adr/ADR-0011-reliability-reference-extension.md): licence-bounded reliability-reference extension
 - [Portable reliability reference](benchmark/reliability_reference/README.md): recovery protocol, constructed fixtures and DuckDB/Spark parity
-- [Source contracts](docs/source_contracts.md): upstream dependencies and failure signals
+- [ADR-0013](docs/adr/ADR-0013-station-footfall-context-series.md): station footfall as a context series, not evidence
+- [ADR-0014](docs/adr/ADR-0014-byte-reproducible-certified-inputs.md): making the certified inputs byte-reproducible
+- [Source contracts](docs/source_contracts.md): upstream dependencies, failure signals, and the licence/rate-limit position
+- [Directions not taken](docs/directions-not-taken.md): four product directions a 2026-07-27 scan killed, and why
 - [Snowflake evidence](docs/snowflake_evidence.md): captured warehouse figures and cost
 
 ## Limitations
@@ -306,7 +329,9 @@ conformance claim is made, and DuckDB/Spark `0.2.0` remains the supported suite.
   2026-07-08 only. Line-level proximity analysis activates once journey extracts cover that
   window.
 - **Journey data lags ~1–2 months** because of TfL's bulk publishing schedule. Live monitoring and
-  historical measurement are separate claims.
+  historical measurement are separate claims. Station footfall (ADR-0013) refreshes within days
+  and narrows that window, but it does **not** close it: tap counts measure a different thing on
+  a different network and cannot stand in for journey data.
 - **Missed snapshot days are permanent.** The API keeps no history; 2026-07-11/12 were lost to
   a since-fixed crash and are shown as holes on the Pipeline health page, not hidden.
 - **Increment approximation:** arrivals on extract-boundary dates can miss rides that started

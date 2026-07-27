@@ -12,7 +12,7 @@ import hashlib
 import json
 from pathlib import Path
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 ADR_ID = "ADR-0009"
 CLAIM_CLASS = "observed_association"
 PERMITTED_CLAIM = (
@@ -51,6 +51,36 @@ def input_hashes(root: Path) -> dict[str, str]:
     }
 
 
+def content_fingerprint(path: Path) -> str:
+    """An order-INDEPENDENT fingerprint of a Parquet input: row count + commutative row-hash sum.
+
+    Schema 1.1 pins this alongside the byte hash so a failure is legible. A byte hash alone
+    cannot distinguish "the data changed" from "the rows came back in a different order",
+    and this project spent a debugging cycle on exactly that confusion (ADR-0014). Both are
+    covered by the certificate ID, so neither can be edited without detection.
+    """
+    import duckdb  # local: keeps the module importable for text-only verification paths
+
+    con = duckdb.connect()
+    try:
+        rows, digest = con.execute(
+            "select count(*), sum(hash(to_json(t))::hugeint) from read_parquet(?) t",
+            [path.as_posix()],
+        ).fetchone()
+    finally:
+        con.close()
+    return f"{rows}:{digest}"
+
+
+def input_content_fingerprints(root: Path) -> dict[str, str]:
+    """Fingerprints for the Parquet inputs only; the seed CSV is already line-ending-normalised."""
+    return {
+        relative: content_fingerprint(root / relative)
+        for relative in INPUT_PATHS
+        if relative.endswith(".parquet")
+    }
+
+
 def certified_result_payload(evidence: dict) -> dict:
     """Return the ADR-0009 result-bearing fields guarded by the certificate.
 
@@ -71,11 +101,13 @@ def certified_result_sha256(evidence: dict) -> str:
 
 
 def _certificate_id(
-    input_sha256: dict[str, str], code_sha256: str, analysis_configuration: dict, result_sha256: str
+    input_sha256: dict[str, str], code_sha256: str, analysis_configuration: dict, result_sha256: str,
+    input_content_fingerprint: dict[str, str],
 ) -> str:
     material = json.dumps(
         {
             "inputs": input_sha256,
+            "input_content_fingerprint": input_content_fingerprint,
             "code": code_sha256,
             "analysis_configuration": analysis_configuration,
             "certified_result_sha256": result_sha256,
@@ -90,12 +122,15 @@ def build_certificate(
 ) -> dict:
     """Build provenance for the existing rigor result without calculating it."""
     hashes = input_hashes(root)
+    fingerprints = input_content_fingerprints(root)
     code_sha256 = sha256_versioned_text(root / "analysis" / "rigor.py")
     result_sha256 = certified_result_sha256(certified_result)
     return {
         "certificate_schema_version": SCHEMA_VERSION,
         "evidence_version": "tcert-adr0009-v1",
-        "certificate_id": _certificate_id(hashes, code_sha256, analysis_configuration, result_sha256),
+        "certificate_id": _certificate_id(
+            hashes, code_sha256, analysis_configuration, result_sha256, fingerprints
+        ),
         "adr_id": ADR_ID,
         "adr_document_sha256": sha256_versioned_text(root / "docs" / "adr" / "ADR-0009-analytical-contract.md"),
         "generated_at_utc": generated_at,
@@ -115,6 +150,7 @@ def build_certificate(
         "analysis_configuration": analysis_configuration,
         "certified_result_sha256": result_sha256,
         "input_sha256": hashes,
+        "input_content_fingerprint": fingerprints,
         "code_sha256": code_sha256,
     }
 
@@ -158,13 +194,37 @@ def validate_certificate(evidence: dict, root: Path) -> None:
 
     expected_inputs = input_hashes(root)
     recorded_inputs = certificate.get("input_sha256", {})
+    recorded_fingerprints = certificate.get("input_content_fingerprint", {})
+    _require(isinstance(recorded_fingerprints, dict), "missing input content fingerprints")
+    for relative in INPUT_PATHS:
+        if relative.endswith(".parquet"):
+            _require(relative in recorded_fingerprints,
+                     f"missing input content fingerprint: {relative}")
     for relative, digest in expected_inputs.items():
-        _require(recorded_inputs.get(relative) == digest, f"hash mismatch: {relative}")
+        if recorded_inputs.get(relative) == digest:
+            continue
+        # A byte mismatch alone cannot say WHAT changed. Schema 1.1 pins an order-independent
+        # fingerprint too, so the failure names the actual fault instead of sending the reader
+        # to diff a Parquet file by hand (ADR-0014).
+        if relative in recorded_fingerprints:
+            actual = content_fingerprint(root / relative)
+            if recorded_fingerprints[relative] == actual:
+                _require(False, (
+                    f"row-order drift, not a data change: {relative}. Contents are identical; "
+                    "only the row order differs. Rebuild determinism regressed — check the "
+                    "ORDER BY on the exporting model, then re-run analysis/rigor.py."
+                ))
+            _require(False, f"content changed: {relative}")
+        _require(False, f"hash mismatch: {relative}")
+    for relative, fingerprint in recorded_fingerprints.items():
+        _require(content_fingerprint(root / relative) == fingerprint,
+                 f"content fingerprint mismatch: {relative}")
     _require(certificate.get("code_sha256") == sha256_versioned_text(root / "analysis" / "rigor.py"), "hash mismatch: analysis/rigor.py")
     _require(certificate.get("adr_document_sha256") == sha256_versioned_text(root / "docs" / "adr" / "ADR-0009-analytical-contract.md"), "hash mismatch: ADR-0009")
     _require(
         certificate.get("certificate_id")
-        == _certificate_id(recorded_inputs, certificate["code_sha256"], expected_configuration, result_sha256),
+        == _certificate_id(recorded_inputs, certificate["code_sha256"], expected_configuration,
+                           result_sha256, recorded_fingerprints),
         "certificate ID mismatch",
     )
 

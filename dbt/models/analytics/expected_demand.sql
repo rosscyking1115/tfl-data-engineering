@@ -38,3 +38,6 @@ select
     count(*)                         as n_observations
 from enriched
 group by station_key, dow, is_wet, is_cold
+
+-- Total order over the group-by key (also asserted unique) — see demand_deviation.sql (ADR-0014).
+order by station_key, dow, is_wet, is_cold
