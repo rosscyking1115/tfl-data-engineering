@@ -22,7 +22,7 @@ observed payloads.
 | | |
 |---|---|
 | Endpoint | `GET https://api.tfl.gov.uk/Line/Mode/tube,dlr,overground,elizabeth-line,tram/Status` |
-| Auth / limits | Anonymous works (throttled ~50 req/min); `app_key` raises to 500 req/min. One call/day used. |
+| Auth / limits | Anonymous works (throttled ~50 req/min); `app_key` raises to 500 req/min. One call/day used. **The durable daily path (`live_snapshot.py`) sends no application key** — it runs anonymously at two calls/day total, far inside the anonymous limit. See [Licence and rate-limit position](#licence-and-rate-limit-position). |
 | Cadence | Live state only; **there is no historical archive**. History exists only because the workflow takes a daily snapshot (permanent if collected; ADR-0009 two-horizon). |
 | Shape | Per line: `id, name, modeName, lineStatuses[] {statusSeverity, statusSeverityDescription, reason}`. `statusSeverity == 10` = Good Service; lower = worse. |
 | We depend on | `id, name, modeName`, `lineStatuses[].statusSeverity/statusSeverityDescription/reason`. |
@@ -48,8 +48,37 @@ observed payloads.
 | We depend on | `temperature_2m_mean, temperature_2m_max, precipitation_sum, rain_sum, wind_speed_10m_max, weather_code` per calendar day. |
 | Breakage surfaces as | HTTP failure (retried w/ backoff, then loud) or missing-day joins falling to the `false` weather bucket (bounded by the sensitivity battery, ADR-0009). |
 
+## 5 · TfL station footfall (live-layer context series)
+
+| | |
+|---|---|
+| Endpoint | `GET https://crowding.data.tfl.gov.uk/Network%20Demand/StationFootfall_*.csv`. Bucket listing via `https://s3-eu-west-1.amazonaws.com/crowding.data.tfl.gov.uk/?list-type=2&prefix=Network%20Demand/` (the vanity domain is a JS browser, not XML). |
+| Auth / limits | None (open data). Bulk HTTP GET; one ~10 MB fetch per refresh. |
+| Cadence | Re-published every few days. **Measured 2026-07-27:** current file modified 2026-07-22, data through 2026-07-18 — a four-day lag, against ~1–2 months for journeys. One observation is not a guaranteed schedule, so the freshness thresholds are loose (warn 10d / error 21d). |
+| Schema | `TravelDate, DayOfWeek, Station, EntryTapCount, ExitTapCount`. `TravelDate` is a YYYYMMDD integer. |
+| Coverage | 2019-01-01 onward; 1,166,182 rows across 439 stations as at 2026-07-18 (5.26 MB zstd Parquet). |
+| Known quirks | **Header case drift** (`DayOFWeek` 2019–2022, `DayOfWeek` from 2023); **UTF-8 BOM** in 2019–2023 files, absent from 2024; a literal **space before `.csv`** in the two rolling filenames; and the files **overlap** — `StationFootfall_2024_2025` (20240101–20251227) fully contains `StationFootfall_2024` and half the current file, so naive concatenation double-counts two years. Overlapping rows agree exactly (156,995 compared for 2024, zero disagreements). |
+| We depend on | The five columns above **by case-insensitive name** (`REQUIRED_COLUMNS` in [station_footfall.py](../ingestion/station_footfall.py)); the explicitly non-overlapping `BACKFILL_KEYS` set. |
+| Breakage surfaces as | The **schema gate** (`SystemExit: schema gate`), the `(date_key, rail_station)` uniqueness test, or `dbt source freshness` on `gold_export.station_footfall`. |
+| Boundary | **Taps are rail gate events, not journeys and not cycle-hire.** Different measure, different population. It is never joined to `dim_station` — the column is named `rail_station` to keep that visibly wrong — and it feeds no claim in ADR-0009 (see [ADR-0013](adr/ADR-0013-station-footfall-context-series.md)). |
+
+## Licence and rate-limit position
+
+Verified against the current terms on **2026-07-27**, so it does not have to be re-derived.
+
+| Question | Finding |
+|---|---|
+| Licence | [Version 2.0 of the Open Government Licence with TfL amendments](https://tfl.gov.uk/corporate/terms-and-conditions/transport-data-service). |
+| Commercial use | Permitted — the terms allow exploiting the information "commercially and non-commercially", including within your own product or application. |
+| Automated extraction | The terms prohibit automated extraction, trawling, data mining and screen scraping **in relation to the Oyster, Congestion Charging and Santander Cycles *websites*** absent a written licence agreement. |
+| Does this repo do that? | **No.** Every outbound host in `ingestion/` is an explicitly provided interface: the public S3 buckets (`cycling.data.tfl.gov.uk`, `crowding.data.tfl.gov.uk`), the Unified API (`api.tfl.gov.uk`), LAQN (`api.erg.ic.ac.uk`) and Open-Meteo. No code path fetches Santander Cycles website pages, and the repo carries no HTML-scraping dependency. |
+| Rate limits | 50 requests/min anonymous; 500/min with a free registered application key. |
+| Where we sit | Far inside both. `live_snapshot.py` — the durable daily path — makes **two** API calls per day and sends **no** application key, so it runs anonymously. `daily_api_ingest.py` (the Snowflake-era loader) sends `app_key` when `TFL_APP_KEY` is set. Bulk CSV fetches hit S3, not the rate-limited API. |
+
+Attribution wording required by the terms is reproduced below and in the README.
+
 ## Attribution
 
-Journey, line-status and BikePoint data: **Powered by TfL Open Data**. Contains OS data
-© Crown copyright and database rights 2016; Geomni UK Map data © and database rights 2019.
-Weather: [Open-Meteo](https://open-meteo.com/) (CC-BY 4.0).
+Journey, line-status, BikePoint and station-footfall data: **Powered by TfL Open Data**.
+Contains OS data © Crown copyright and database rights 2016; Geomni UK Map data
+© and database rights 2019. Weather: [Open-Meteo](https://open-meteo.com/) (CC-BY 4.0).
