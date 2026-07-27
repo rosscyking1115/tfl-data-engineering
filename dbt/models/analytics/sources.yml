@@ -11,3 +11,17 @@ sources:
       - name: weather_daily
       - name: predicted_demand
         description: LightGBM counterfactual "normal demand" baseline (ml/predict.py), disruption flag off.
+      - name: station_footfall
+        description: >
+          Daily RAIL entry/exit tap counts per station (ingestion/station_footfall.py, from
+          crowding.data.tfl.gov.uk). Context for the live layer only — taps are gate events on
+          the rail network, not journeys, and not the cycle-hire population. It must never be
+          joined to dim_station; the column is named rail_station to keep that visibly wrong.
+        loaded_at_field: "cast(pulled_at as timestamptz)"
+        # Deliberately loose. A four-day data lag and one observed re-publish (file modified
+        # 2026-07-22, data through 2026-07-18, both checked 2026-07-27) is not enough to
+        # assert a weekly cadence, so these thresholds flag a genuinely stalled feed rather
+        # than pretending to know the publishing schedule.
+        freshness:
+          warn_after: { count: 10, period: day }
+          error_after: { count: 21, period: day }
