@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-27T07:29:32Z",
+  "generated_at": "2026-07-27T22:10:36Z",
   "certificate": {
-    "certificate_schema_version": "1.0",
+    "certificate_schema_version": "1.1",
     "evidence_version": "tcert-adr0009-v1",
-    "certificate_id": "tcert-adr0009-ba640c07c2bb",
+    "certificate_id": "tcert-adr0009-36085ec85fec",
     "adr_id": "ADR-0009",
     "adr_document_sha256": "930d4324293feea950a142ca8893f3b92f46ab925812de52ab2dcd3cb95a83d4",
-    "generated_at_utc": "2026-07-27T07:29:32Z",
+    "generated_at_utc": "2026-07-27T22:10:36Z",
     "claim_class": "observed_association",
     "permitted_claim": "On days with a verified, source-cited London Underground strike, Santander cycle-hire demand runs at a median 1.42\u00d7 its weather-adjusted expectation. This is an observed association, not a causal effect.",
     "primary_specification": {
@@ -46,13 +46,19 @@
     },
     "certified_result_sha256": "6a2c5105b5dcf0f2681a10dd08565abb74584918c5105ba6b39163bdfdc31dac",
     "input_sha256": {
-      "app/gold_export/demand_deviation.parquet": "78ffbdb220d1876ae15cccc0679b92d7c2e82a35d5d5e483abcb72a113870463",
-      "app/gold_export/demand_deviation_ml.parquet": "a42b6c4bc3a752cca399baf6d78215b24207866641a861c663245360c52f0061",
+      "app/gold_export/demand_deviation.parquet": "df1f017fdfdc41db6f57c038a030489368e887561529a928dbcc3991e5b2ec8f",
+      "app/gold_export/demand_deviation_ml.parquet": "2bdd7dd243c2fade4982bb8c0a898022257a83544c44cdddb8e53d7a07d7d4cd",
       "app/gold_export/station_daily_flows.parquet": "ab6e12a3e744423a24aa9a6098455184a9ffd85fa7d08b3c0506e8411f6289f4",
       "app/gold_export/weather_daily.parquet": "8d98dddb37829d87c08d61cbb209fe194ec7732caa7eda441e298590cc8db63a",
       "dbt/seeds/disruption_dates.csv": "ed78033e4083ae23cc86ab37ba4b2f8749c7d169d3cef8c79e81bc130d98f372"
     },
-    "code_sha256": "61b091ec26eddfb85d8498d4d8d287b0421365e64771b2bb55615dd0f749532c"
+    "input_content_fingerprint": {
+      "app/gold_export/demand_deviation.parquet": "1282472:11833091440679033735582824",
+      "app/gold_export/demand_deviation_ml.parquet": "1282472:11831759752914173078787492",
+      "app/gold_export/station_daily_flows.parquet": "1282472:11827263975018984529993919",
+      "app/gold_export/weather_daily.parquet": "1673:15446083469858585606171"
+    },
+    "code_sha256": "98dc0784cf9db7e9b4e1a95d5d0d999966d0d200f93a60d377b20ced470bbdf7"
   },
   "seed": 42,
   "method": "cluster bootstrap over event days; dow-matched placebo; see ADR-0009",
@@ -67,8 +73,8 @@
     {
       "date": "2022-06-06",
       "ratio": 1.577,
-      "ci_lo": 1.535,
-      "ci_hi": 1.62,
+      "ci_lo": 1.537,
+      "ci_hi": 1.617,
       "severity": "major",
       "n_stations": 786
     },
@@ -76,46 +82,46 @@
       "date": "2022-06-07",
       "ratio": 1.653,
       "ci_lo": 1.618,
-      "ci_hi": 1.69,
+      "ci_hi": 1.691,
       "severity": "knock_on",
       "n_stations": 781
     },
     {
       "date": "2022-06-21",
       "ratio": 2.085,
-      "ci_lo": 2.021,
-      "ci_hi": 2.152,
+      "ci_lo": 2.019,
+      "ci_hi": 2.149,
       "severity": "major",
       "n_stations": 788
     },
     {
       "date": "2022-08-19",
       "ratio": 2.336,
-      "ci_lo": 2.272,
-      "ci_hi": 2.401,
+      "ci_lo": 2.274,
+      "ci_hi": 2.405,
       "severity": "major",
       "n_stations": 791
     },
     {
       "date": "2022-11-10",
       "ratio": 1.417,
-      "ci_lo": 1.383,
-      "ci_hi": 1.451,
+      "ci_lo": 1.385,
+      "ci_hi": 1.449,
       "severity": "major",
       "n_stations": 792
     },
     {
       "date": "2022-11-25",
       "ratio": 0.946,
-      "ci_lo": 0.927,
-      "ci_hi": 0.963,
+      "ci_lo": 0.928,
+      "ci_hi": 0.964,
       "severity": "partial",
       "n_stations": 790
     },
     {
       "date": "2023-03-15",
       "ratio": 1.53,
-      "ci_lo": 1.492,
+      "ci_lo": 1.491,
       "ci_hi": 1.57,
       "severity": "major",
       "n_stations": 791
@@ -124,7 +130,7 @@
       "date": "2023-03-16",
       "ratio": 1.0,
       "ci_lo": 0.975,
-      "ci_hi": 1.023,
+      "ci_hi": 1.025,
       "severity": "knock_on",
       "n_stations": 794
     },
@@ -139,8 +145,8 @@
     {
       "date": "2025-09-08",
       "ratio": 1.497,
-      "ci_lo": 1.467,
-      "ci_hi": 1.531,
+      "ci_lo": 1.465,
+      "ci_hi": 1.53,
       "severity": "major",
       "n_stations": 797
     },
@@ -156,7 +162,7 @@
       "date": "2025-09-10",
       "ratio": 1.453,
       "ci_lo": 1.421,
-      "ci_hi": 1.487,
+      "ci_hi": 1.486,
       "severity": "major",
       "n_stations": 795
     },
@@ -164,7 +170,7 @@
       "date": "2025-09-11",
       "ratio": 1.664,
       "ci_lo": 1.627,
-      "ci_hi": 1.703,
+      "ci_hi": 1.704,
       "severity": "major",
       "n_stations": 793
     }

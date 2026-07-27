@@ -34,3 +34,6 @@ left join {{ source('gold_export', 'predicted_demand') }} p
    and a.date_key = p.date_key
 left join {{ ref('disruption_dates') }} dd
     on a.date_day = cast(dd.date as date)
+
+-- Total order over the model's tested unique key — see demand_deviation.sql (ADR-0014).
+order by date_key, station_key

@@ -4,6 +4,7 @@ import altair as alt
 import data_access as da
 import pandas as pd
 import streamlit as st
+import ui
 
 st.title("Usage trends")
 st.caption(
@@ -14,8 +15,9 @@ st.caption(
 lo, hi = da.date_bounds()
 with st.sidebar:
     st.subheader("Filters")
-    start, end = st.date_input("Date range", value=(lo, hi), min_value=lo, max_value=hi)
-    grain = st.segmented_control("Granularity", ["Daily", "Monthly"], default="Daily")
+    start, end = ui.date_range_input("Date range", lo, hi, key="trends_range")
+    grain = st.segmented_control("Granularity", ["Daily", "Monthly"],
+                                 default="Daily", required=True)
 
 df = da.daily_stats()
 lo_ts, hi_ts = pd.Timestamp(start), pd.Timestamp(end)

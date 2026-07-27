@@ -38,3 +38,8 @@ left join {{ ref('expected_demand') }} b
    and a.is_cold = b.is_cold
 left join {{ ref('disruption_dates') }} dd
     on a.date_day = cast(dd.date as date)
+
+-- Total order over the model's tested unique key. Without it DuckDB writes rows in
+-- plan-dependent order, so the exported Parquet is not byte-reproducible and the
+-- ADR-0009 certificate that pins its hash goes red on a no-op rebuild (ADR-0014).
+order by date_key, station_key

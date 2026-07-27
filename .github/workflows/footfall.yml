@@ -1,0 +1,64 @@
+name: weekly-station-footfall
+
+# Station footfall (ADR-0013) is re-published every few days, not daily. It gets its own
+# weekly trigger rather than riding the daily job: on a daily trigger it would commit
+# nothing most mornings, and the point of a schedule is that its cadence means something.
+#
+# Deliberately narrow. It touches only the footfall artefact and its own model, and never
+# rebuilds the ADR-0009 certified inputs or regenerates the certificate — footfall is a
+# context series and is not a certificate input (ADR-0013).
+on:
+  schedule:
+    - cron: "41 7 * * 1"   # ~07:41 UTC Mondays (off-the-hour on purpose)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  footfall:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install (pinned to the locally-verified stack)
+        run: pip install --quiet requests==2.34.2 pandas==3.0.3 pyarrow==24.0.0 duckdb==1.5.4 dbt-duckdb
+
+      - name: Fetch the current footfall file (idempotent upsert)
+        run: python ingestion/station_footfall.py
+
+      - name: Rebuild + test the footfall model only (gates delivery)
+        run: |
+          dbt deps --project-dir dbt --profiles-dir dbt
+          dbt build --target duckdb --select stg_station_footfall+ --project-dir dbt --profiles-dir dbt
+          dbt source freshness --target duckdb --select source:gold_export.station_footfall --project-dir dbt --profiles-dir dbt
+
+      - name: Commit refreshed footfall
+        run: |
+          git config user.name "rosscyking1115"
+          git config user.email "rosscyking1115@gmail.com"
+          git add app/gold_export/station_footfall.parquet
+          if git diff --quiet --cached; then
+            echo "no new footfall rows"
+          else
+            git commit -m "chore(data): weekly station footfall refresh [skip ci]"
+            git push
+          fi
+
+      - name: Open an issue on failure
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Weekly footfall refresh failed: $(date -u +%F)" \
+            --body "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Unlike the daily snapshot, this is recoverable — TfL republishes the whole rolling
+          file, so a later run backfills the gap. Common causes: the StationFootfall header
+          drifting again (the schema gate fires), or the rolling filename changing." \
+            --label "pipeline"

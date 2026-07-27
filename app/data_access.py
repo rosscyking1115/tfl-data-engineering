@@ -13,6 +13,19 @@ import streamlit as st
 
 EXPORT = Path(__file__).resolve().parent / "gold_export"
 
+# Mirrors ml/features.py VAL_END: the model trained on nothing at or after this date_key,
+# so it is the only window in which a model-vs-baseline comparison is honest.
+HELD_OUT_FROM = 20260101
+
+
+def _read(sql: str, params: list | None = None) -> pd.DataFrame:
+    """Run a query that reads Parquet paths inline, closing the connection like _q does."""
+    con = duckdb.connect()
+    try:
+        return con.execute(sql, params or []).df()
+    finally:
+        con.close()
+
 
 def _q(sql: str, params: list | None = None) -> pd.DataFrame:
     con = duckdb.connect()  # fresh in-memory con per call; parquet opened read-only
@@ -90,7 +103,7 @@ def _dev_path() -> str:
 @st.cache_data(ttl="1h")
 def disruption_dates() -> pd.DataFrame:
     """Per disruption date: system actual vs weather-adjusted expected + ratio."""
-    return duckdb.connect().execute(
+    return _read(
         f"""
         select date_day,
                sum(departures) as actual,
@@ -101,13 +114,13 @@ def disruption_dates() -> pd.DataFrame:
         where is_disruption
         group by date_day order by date_day
         """
-    ).df()
+    )
 
 
 @st.cache_data(ttl="1h")
 def top_movers_on(date_str: str, limit: int = 15) -> pd.DataFrame:
     """Stations with the largest positive demand deviation on a given date."""
-    return duckdb.connect().execute(
+    return _read(
         f"""
         select station_name, departures, round(expected_departures) as expected,
                deviation, deviation_ratio
@@ -117,7 +130,7 @@ def top_movers_on(date_str: str, limit: int = 15) -> pd.DataFrame:
         limit ?
         """,
         [date_str, limit],
-    ).df()
+    )
 
 
 # --- ML forecast layer (predicted_demand + demand_deviation_ml) ---
@@ -129,7 +142,7 @@ def _ml_dev_path() -> str:
 @st.cache_data(ttl="1h")
 def forecast_series(station_name: str) -> pd.DataFrame:
     """Actual vs the LightGBM baseline over time, for one station."""
-    return duckdb.connect().execute(
+    return _read(
         f"""
         select date_day,
                departures           as actual,
@@ -140,14 +153,22 @@ def forecast_series(station_name: str) -> pd.DataFrame:
         order by date_day
         """,
         [station_name],
-    ).df()
+    )
 
 
 @st.cache_data(ttl="1h")
 def forecast_accuracy() -> pd.DataFrame:
-    """Overall mean absolute error of the ML baseline vs the median baseline, on the
-    same station-days (lower is better). The learned model is the sharper 'normal'."""
-    return duckdb.connect().execute(
+    """Mean absolute error of the ML baseline vs the dbt median baseline, **held-out only**.
+
+    Scoped to date_key >= HELD_OUT_FROM, because over the full history the join also covers
+    station-days the model trained on, which inflates its apparent lead (33% vs 17% here).
+
+    One caveat this query cannot remove: the dbt median (`expected_demand`) takes its median
+    over all history with no date filter, so on this window the comparator is in-sample while
+    the model is not. That understates the model. ml/train.py runs the leakage-free version,
+    fitting its median comparator on pre-test data only.
+    """
+    return _read(
         f"""
         with ml as (
             select date_key, station_key, abs(deviation) e
@@ -161,8 +182,10 @@ def forecast_accuracy() -> pd.DataFrame:
                round(avg(md.e), 2) as median_mae,
                count(*)            as n
         from ml join md on ml.date_key = md.date_key and ml.station_key = md.station_key
-        """
-    ).df()
+        where ml.date_key >= ?
+        """,
+        [HELD_OUT_FROM],
+    )
 
 
 @st.cache_data(ttl="1h")
@@ -243,3 +266,21 @@ def live_bikepoint() -> pd.DataFrame:
         return pd.DataFrame()
     df = pd.read_parquet(path)
     return df[df["snapshot_date"] == df["snapshot_date"].max()]
+
+
+@st.cache_data(ttl="15m")
+def line_status_history() -> pd.DataFrame:
+    """Every collected snapshot day, not just the latest — this is what coverage is built on."""
+    path = EXPORT / "live_line_status.parquet"
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_parquet(path)
+
+
+@st.cache_data(ttl="15m")
+def run_log() -> pd.DataFrame:
+    """The daily job's audit trail; empty until the first gated run commits it."""
+    path = EXPORT / "run_log.parquet"
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_parquet(path).sort_values("run_ts")

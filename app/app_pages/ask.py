@@ -29,6 +29,7 @@ with st.container(border=True):
         ],
         selection_mode="single",
         default="Why are lines disrupted now?",
+        required=True,  # without this, deselecting leaves the panel silently blank
         label_visibility="collapsed",
     )
 

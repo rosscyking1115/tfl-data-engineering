@@ -52,3 +52,6 @@ select
     arg_min(sample_reason, worst_severity)        as sample_reason
 from islands
 group by line_id, island_anchor
+
+-- Total order over the model's tested unique key — see demand_deviation.sql (ADR-0014).
+order by line_id, start_date

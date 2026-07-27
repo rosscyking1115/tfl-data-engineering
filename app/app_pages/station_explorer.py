@@ -4,6 +4,7 @@ import altair as alt
 import data_access as da
 import pandas as pd
 import streamlit as st
+import ui
 
 st.title("Station explorer")
 st.caption("Reads the gold `station_daily_flows` rollup (station × day) joined to `dim_station`.")
@@ -11,8 +12,10 @@ st.caption("Reads the gold `station_daily_flows` rollup (station × day) joined 
 lo, hi = da.date_bounds()
 with st.sidebar:
     st.subheader("Filters")
-    start, end = st.date_input("Date range", value=(lo, hi), min_value=lo, max_value=hi)
-    by = st.segmented_control("Rank by", ["departures", "arrivals"], default="departures")
+    start, end = ui.date_range_input("Date range", lo, hi, key="explorer_range")
+    # required=True: deselecting would return None and render "Busiest N stations by None".
+    by = st.segmented_control("Rank by", ["departures", "arrivals"],
+                              default="departures", required=True)
     top_n = st.slider("How many stations", 5, 25, 10)
 
 with st.container(border=True):
@@ -33,9 +36,10 @@ with st.container(border=True):
 
 with st.container(border=True):
     st.subheader("Single-station flow over time")
-    station = st.selectbox("Station", da.station_names(),
-                           index=da.station_names().index("Hyde Park Corner, Hyde Park")
-                           if "Hyde Park Corner, Hyde Park" in da.station_names() else 0)
+    stations = da.station_names()
+    default = stations.index("Hyde Park Corner, Hyde Park") \
+        if "Hyde Park Corner, Hyde Park" in stations else 0
+    station = st.selectbox("Station", stations, index=default)
     series = da.station_series(station, str(start), str(end))
     if series.empty:
         st.info("No activity for this station in range.")
