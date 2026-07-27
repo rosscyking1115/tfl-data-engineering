@@ -20,6 +20,12 @@ causation**: the certified evidence reports 1.42× median station-day demand rel
 weather-adjusted expectation, with its existing uncertainty checks. See the
 [certified-evidence note](docs/certified_evidence.md) for source-to-consumer lineage.
 
+In plain terms: on a Tube strike day, the typical docking station saw about **42% more hires than
+expected** for that station, that weekday and that weather. "Expected" is a baseline built from the
+station's own history, not a guess. The result is deliberately framed as an association — strikes
+are announced in advance, cluster seasonally and coincide with weather, so this does not establish
+that the strike *caused* the extra cycling.
+
 The workflow deliberately has two horizons: cited strikes support historical measurement; Line
 Status and BikePoint snapshots are forward-collected live monitoring. **GitHub Actions + committed
 Parquet/DuckDB** is the durable runtime. **Airflow is a local portfolio demonstration**, not the
@@ -42,10 +48,11 @@ production scheduler.
 
 ## Overview
 
-Transport for London has published cycle-hire journeys since 2012. A historical bucket inventory
-recorded roughly **189M trips across 482 objects**; that is a dated inventory snapshot, not a claim
-about the current bucket. The implemented backfill covers **41.4M journeys in 148 retained files
-from 2022 to May 2026**, including five ordered-header variants.
+Transport for London has published cycle-hire journeys since 2012, as CSV files in a public S3
+bucket. An inventory of that bucket counted roughly **189M trips across 482 files** — a dated
+snapshot taken once, not a claim about what the bucket holds today. The backfill actually built
+here covers **41.4M journeys in 148 retained files from 2022 to May 2026**, spanning five different
+column layouts, because TfL renamed, dropped and reordered columns between eras.
 
 - **Disruption analysis:** a weather-adjusted baseline that measures how Tube and rail strikes
   reshape cycling demand, per station and per day.
@@ -95,8 +102,9 @@ the median was **1.42×** a weather-adjusted baseline.
   optional bring-your-own-key Claude chat over curated, read-only tools
   ([ADR-0007](docs/adr/ADR-0007-qa-assistant-tool-calling.md)).
 - **Free daily runtime.** A GitHub Actions job refreshes live line status and dock
-  occupancy into committed Parquet. The app reads it through DuckDB, so it keeps
-  running long after the Snowflake trial ends.
+  occupancy into committed Parquet. The app reads it through DuckDB, so it keeps running with no
+  warehouse at all — the Snowflake phase was a one-off build on a free trial, and the workflow
+  outlived it by design rather than depending on it.
 - **Station footfall context series.** Daily rail entry/exit tap counts from TfL's crowding
   bucket — 1.17M rows over 439 stations from 2019, 5.3 MB as Parquet. It is re-published within
   days rather than the journey extracts' 1–2 months, so it narrows the lag the workflow has to
@@ -218,13 +226,14 @@ warehouse or credentials ([ADR-0004](docs/adr/ADR-0004-mcp-readonly-boundary.md)
 
 ```bash
 python -m venv .venv
-.venv/Scripts/pip install -r app/requirements.txt   # demo app deps
+.venv/Scripts/pip install -r app/requirements.txt   # Windows; use .venv/bin/pip on macOS or Linux
 streamlit run app/streamlit_app.py                   # runs on committed Parquet, no warehouse
 ```
 
-The demo app reads committed Parquet through DuckDB. It needs no database and runs fully offline. The
-Quick answers work with no setup; the free-form chat needs your own `ANTHROPIC_API_KEY` (in `.env`
-locally). To reproduce the warehouse build (Spark → Snowflake → dbt), see [docs/](docs/).
+Verified on Python 3.13. The demo app reads committed Parquet through DuckDB, so it needs no
+database and runs fully offline — clone and run, nothing to provision. The Quick answers work with
+no setup; only the optional free-form chat needs your own `ANTHROPIC_API_KEY` (in `.env` locally).
+To reproduce the warehouse build (Spark → Snowflake → dbt), see [docs/](docs/).
 
 ## Project structure
 
@@ -232,14 +241,20 @@ locally). To reproduce the warehouse build (Spark → Snowflake → dbt), see [d
 ingestion/   API loaders, warehouse loaders, data-export scripts
 spark/       multi-era backfill job
 dbt/         staging + marts models, tests, seeds
+analysis/    the certified ADR-0009 evidence: rigor.py computes it, certificate.py pins it
 ml/          demand model: features, LightGBM training (MLflow), batch predict, FastAPI serving
 app/         Streamlit app (DuckDB over committed gold Parquet) + Ask assistant
 mcp/         read-only MCP server over the gold layer
+powerbi/     code-first semantic model over the same Parquet (DAX, Power Query M, TMDL)
 benchmark/   constructed reliability-reference fixtures and cross-engine conformance suite
 infra/       Airflow (Docker Compose), run scripts, bounded Databricks proof candidate
 tests/       pytest suite (feature-leakage guard, Quick answers, tool dispatch), run in CI
 docs/        ADRs, architecture and engineering notes
 ```
+
+The Power BI layer is written as code rather than clicked together: see
+[`powerbi/README.md`](powerbi/README.md), which states plainly what has and has not been opened in
+Power BI Desktop from this repo.
 
 ## How it stays live
 
@@ -287,9 +302,14 @@ run inside a digest-pinned `apache/spark:4.0.1` container, then a semantic compa
 decoded results — all three reports uploaded as artefacts. It does not import application state
 or alter the living workflow.
 
-T3 attempted a bounded Databricks Delta proof. The gate ended **NARROW** because the initial
-deployment and one allowed corrective deployment could not reliably read workspace Python files.
-The semantic oracle was never reached. Teardown was independently verified, no managed
+A later phase of that work (tier 3) attempted to extend the same suite to Databricks Delta, under a
+pre-agreed budget of one deployment plus one corrective attempt. It did not succeed, and the write-up
+below is deliberately kept as the record of that:
+
+T3 attempted a bounded Databricks Delta proof. The gate ended **NARROW** — the narrowest of the
+pre-declared outcomes, meaning the attempt was bounded and stopped rather than passed — because the
+initial deployment and one allowed corrective deployment could not reliably read workspace Python
+files. The semantic oracle was never reached. Teardown was independently verified, no managed
 conformance claim is made, and DuckDB/Spark `0.2.0` remains the supported suite.
 
 [Download reliability reference v0.2.0](https://github.com/rosscyking1115/tfl-data-engineering/releases/tag/v0.2.0)
@@ -311,9 +331,10 @@ conformance claim is made, and DuckDB/Spark `0.2.0` remains the supported suite.
 - [ADR-0009](docs/adr/ADR-0009-analytical-contract.md): claim, design, assumptions, falsifiers and correction log
 - [ADR-0010](docs/adr/ADR-0010-migration-retrospective.md): the completed Snowflake-to-DuckDB migration
 - [ADR-0011](docs/adr/ADR-0011-reliability-reference-extension.md): licence-bounded reliability-reference extension
-- [Portable reliability reference](benchmark/reliability_reference/README.md): recovery protocol, constructed fixtures and DuckDB/Spark parity
+- [ADR-0012](docs/adr/ADR-0012-station-history-and-operational-alerts.md): the SCD2 station history and the local alert boundary
 - [ADR-0013](docs/adr/ADR-0013-station-footfall-context-series.md): station footfall as a context series, not evidence
 - [ADR-0014](docs/adr/ADR-0014-byte-reproducible-certified-inputs.md): making the certified inputs byte-reproducible
+- [Portable reliability reference](benchmark/reliability_reference/README.md): recovery protocol, constructed fixtures and DuckDB/Spark parity
 - [Source contracts](docs/source_contracts.md): upstream dependencies, failure signals, and the licence/rate-limit position
 - [Directions not taken](docs/directions-not-taken.md): four product directions a 2026-07-27 scan killed, and why
 - [Snowflake evidence](docs/snowflake_evidence.md): captured warehouse figures and cost
@@ -344,13 +365,3 @@ conformance claim is made, and DuckDB/Spark `0.2.0` remains the supported suite.
 **Powered by TfL Open Data.** Contains OS data © Crown copyright and database rights 2016 and
 Geomni UK Map data © and database rights 2019. Weather by [Open-Meteo](https://open-meteo.com/)
 (CC-BY 4.0).
-
-## Roadmap
-
-- **Power BI (PL-300):** a code-first semantic model over the same durable Parquet lives in
-  [`powerbi/`](powerbi/), with DAX measures, Power Query M and a TMDL model ready to assemble into a
-  report in Power BI Desktop.
-- Accumulate forward dock-occupancy history to unlock short-horizon availability nowcasting
-  (TfL does not publish historical occupancy).
-- Extend the forecast to an hourly grain (needs a pre-trial Snowflake re-export of hourly flows).
-- Optional always-on hosting (a small paid host) to remove free-tier cold starts entirely.
