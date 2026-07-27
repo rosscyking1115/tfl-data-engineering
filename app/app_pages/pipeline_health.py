@@ -10,6 +10,13 @@ from snapshot_coverage import calculate_snapshot_coverage
 
 COLLECTION_START = date(2026, 7, 8)  # forward disruption log began here (ADR-0009 two-horizon)
 
+# Only these two gaps have a diagnosed cause. Any other missing day must report as
+# unexplained rather than inheriting this incident's write-up.
+DIAGNOSED_GAPS = {
+    date(2026, 7, 11): "a fill-rate NA crash",
+    date(2026, 7, 12): "a branch-protection push block",
+}
+
 st.title("Pipeline health")
 st.caption(
     "The daily job snapshots the live network, ingests new journey CSVs and rebuilds the "
@@ -18,7 +25,10 @@ st.caption(
 )
 
 # full (unfiltered) snapshot history for coverage — not just the latest day
-ls_all = pd.read_parquet(da.EXPORT / "live_line_status.parquet")
+ls_all = da.line_status_history()
+if ls_all.empty:
+    st.info("No snapshot history has been committed yet. The daily job will populate this page.")
+    st.stop()
 collected = sorted(pd.to_datetime(ls_all["snapshot_date"]).dt.date.unique())
 snapshot_status = calculate_snapshot_coverage(
     collected,
@@ -33,10 +43,7 @@ coverage = snapshot_status.coverage
 daily = da.daily_stats()
 j_max = pd.to_datetime(daily["date_day"]).max().date()
 
-rlog = None
-p = da.EXPORT / "run_log.parquet"
-if p.exists():
-    rlog = pd.read_parquet(p).sort_values("run_ts")
+rlog = da.run_log()
 
 with st.container(horizontal=True):
     st.metric("Snapshot coverage", f"{coverage:.0%}", border=True,
@@ -45,7 +52,7 @@ with st.container(horizontal=True):
     st.metric("Latest snapshot", str(max(collected)) if collected else "—", border=True)
     st.metric("Journey data through", str(j_max), border=True,
               help="TfL publishes journey extracts with a ~1–2 month lag (ADR-0006)")
-    if rlog is not None and not rlog.empty:
+    if not rlog.empty:
         st.metric("Last gated run", str(rlog["run_ts"].iloc[-1])[:10], border=True,
                   help=f"dbt build: {rlog['dbt_build'].iloc[-1]}")
 
@@ -57,14 +64,23 @@ if snapshot_status.pending is not None:
     )
 
 if missing:
-    st.warning(
-        f"**{len(missing)} permanently missed snapshot day(s):** "
-        + ", ".join(str(m) for m in missing)
-        + ". The scheduled job failed on these dates (2026-07-11/12: a fill-rate NA crash plus "
-        "a branch-protection push block; both fixed). The API keeps no history, so these holes "
-        "are permanent and remain visible here.",
-        icon=":material/report:",
-    )
+    diagnosed = [m for m in missing if m in DIAGNOSED_GAPS]
+    undiagnosed = [m for m in missing if m not in DIAGNOSED_GAPS]
+    parts = [
+        f"**{len(missing)} permanently missed snapshot day(s).** The API keeps no history, so "
+        "these holes are permanent and remain visible here."
+    ]
+    if diagnosed:
+        causes = "; ".join(f"{m} — {DIAGNOSED_GAPS[m]}" for m in diagnosed)
+        parts.append(f"**Diagnosed ({len(diagnosed)}):** {causes}. Both since fixed.")
+    if undiagnosed:
+        parts.append(
+            f"**Not yet diagnosed ({len(undiagnosed)}):** "
+            + ", ".join(str(m) for m in undiagnosed)
+            + ". No cause has been recorded for these — check the run log below and the "
+            "workflow history before treating them as explained."
+        )
+    st.warning("\n\n".join(parts), icon=":material/report:")
 else:
     st.success("No gaps in the disruption snapshot log.", icon=":material/verified:")
 
@@ -80,7 +96,7 @@ with st.container(border=True):
     ).properties(height=220)
     st.altair_chart(chart, width="stretch")
 
-if rlog is not None and not rlog.empty:
+if not rlog.empty:
     with st.container(border=True):
         st.subheader("Run metadata (the audit trail)", anchor=False)
         st.dataframe(rlog.tail(30).iloc[::-1], hide_index=True, width="stretch")

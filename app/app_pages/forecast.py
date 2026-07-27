@@ -16,16 +16,27 @@ acc = da.forecast_accuracy()
 if not acc.empty:
     r = acc.iloc[0]
     lift = 100 * (r["median_mae"] - r["ml_mae"]) / r["median_mae"] if r["median_mae"] else 0
+    held_out = str(da.HELD_OUT_FROM)[:4]
     with st.container(horizontal=True):
-        st.metric("Model error (MAE)", f"{r['ml_mae']:.2f}", border=True,
+        st.metric(f"Model error (MAE), {held_out} held-out", f"{r['ml_mae']:.2f}", border=True,
                   help="Mean absolute error of the learned baseline, departures/day")
-        st.metric("Median-baseline error", f"{r['median_mae']:.2f}", border=True,
-                  help="The previous weather-adjusted median baseline")
-        st.metric("Improvement", f"{lift:.0f}% lower error", border=True,
-                  help=f"across {int(r['n']):,} station-days")
+        st.metric(f"dbt median error, {held_out} held-out", f"{r['median_mae']:.2f}", border=True,
+                  help="The weather-adjusted median baseline (expected_demand), same rows")
+        st.metric(f"Improvement on {held_out} held-out", f"{lift:.0f}% lower error", border=True,
+                  help=f"across {int(r['n']):,} station-days the model never trained on")
     st.caption(
-        "On the held-out 2026 window, the model cut error by **~21% versus the median** and "
-        "**~28% versus a seasonal-naive baseline**. Validation was temporal, not random."
+        f"**Scope matters, so it is on every card.** These compare the model with the dbt median "
+        f"on {held_out} station-days only — the window the model never saw. Measured over the "
+        f"full history instead, the same comparison reads ~33%, but that includes the model's own "
+        f"training days, so this page does not report it."
+    )
+    st.caption(
+        "That said, the card above still flatters the *median*: `expected_demand` takes its median "
+        "over all history, so the comparator is in-sample here while the model is not. "
+        "[`ml/train.py`](https://github.com/rosscyking1115/tfl-data-engineering/blob/main/ml/train.py) "
+        "runs the fair version — median comparator fitted on pre-test data only — and reports "
+        "**~21% lower error versus the median** and **~28% versus seasonal-naive** on this same "
+        "held-out window. Validation is temporal, never random."
     )
 
 st.subheader("Predicted vs actual")
