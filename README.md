@@ -66,10 +66,21 @@ the median was **1.42×** a weather-adjusted baseline.
 - **Spark/Python boundary.** Spark handles the multi-era backfill; plain Python handles the
   kilobyte-sized daily API pulls. The boundary is documented in
   [the Spark ↔ Python boundary](#the-sparkpython-boundary).
-- **Disruption estimate.** A weather-adjusted baseline measures the strike
-  effect: disruption days run **1.42× median** demand (**95% CI 1.24–1.61**, bootstrap over 13
-  source-cited events), **placebo-tested** (p < 0.001 versus random date sets) and stable across a
-  sensitivity battery ([ADR-0009](docs/adr/ADR-0009-analytical-contract.md)).
+- **Disruption estimate.** A weather-adjusted baseline measures the strike effect at station × day
+  grain: across 13 source-cited events, disruption days run **1.42× median** demand, **95% CI
+  1.24–1.61** from a **cluster bootstrap over event days** — 2,000 replicates, resampling the
+  event day rather than the station-day, because the day is the independent unit. A
+  **day-of-week-matched placebo** over 1,000 random date sets puts the null median at 1.00 and
+  gives a one-sided **p < 0.001**, and the estimate holds across a sensitivity battery. The
+  certificate fixes `claim_class: observed_association`
+  ([ADR-0009](docs/adr/ADR-0009-analytical-contract.md)).
+- **Certified evidence.** [`analysis/certificate.py`](analysis/certificate.py) SHA-256-pins the
+  ADR-0009 text, the five analysis inputs, the analysis code and the result payload into a single
+  certificate ID, so a consumer cannot quietly re-derive the headline number. A drifted input, a
+  changed comparator family or an edited ADR fails verification. The dbt exposures name the two
+  consumers and instruct that the Power BI certified cards must not be rebuilt from DAX or
+  affected by date or station slicers ([certified-evidence
+  note](docs/certified_evidence.md)).
 - **Forecast baseline.** A LightGBM model predicts station-level daily demand. Running it with the
   disruption flag off supplies a counterfactual "normal" baseline
   that's ~30% tighter than the median it replaces (**~21% lower error** on held-out 2026), tracked
@@ -81,11 +92,23 @@ the median was **1.42×** a weather-adjusted baseline.
 - **Free daily runtime.** A GitHub Actions job refreshes live line status and dock
   occupancy into committed Parquet. The app reads it through DuckDB, so it keeps
   running long after the Snowflake trial ends.
-- **Tested dimensional model.** A dbt star schema has **63 data
-  tests** (schema, freshness tripwire, temporal coverage, reconciliation, a de-dup unit test)
-  plus a **93-test pytest suite** — pipeline guards (idempotency, injected errors, an ML
-  leakage guard) and the reliability-reference conformance checks. The full DAG
-  runs on both Snowflake (the documented build) and DuckDB. The rebuild **reconciles exactly**
+- **Slowly-changing station dimension.** `dim_station_history` is a real SCD2 over BikePoint
+  snapshots: an attribute signature over name, position, dock count, installed and locked state;
+  change detection by `lag()`; version numbering by running sum; emitting `valid_from`,
+  `valid_to` and `is_current`. A dbt unit test drives three mock snapshot rows through it and
+  asserts two versions, and a singular test fails any station without exactly one current
+  version. Its header records why it is deliberately **not** bridged to the journey-era
+  `dim_station`: BikePoint names do not always conform to journey-file names, so a forced join
+  would overstate identity certainty.
+- **Tested dimensional model.** A dbt star schema (16 models) carries **78 data tests** — 54
+  built-in, 16 `dbt_utils`, and 8 singular tests for the things generic tests cannot express:
+  flow-to-daily reconciliation, journey-calendar completeness, snapshot-log gaps, one current
+  SCD2 version per station, and a source URL on every seeded strike. Two **dbt unit tests**
+  check model logic against mock rows, and `dbt source freshness` covers all 7 sources.
+  Alongside it runs a **109-test pytest suite** across 15 files: pipeline guards (idempotency,
+  injected errors, an ML leakage guard), the evidence-certificate contract, and the
+  reliability-reference conformance checks. The full DAG runs on both Snowflake (the documented
+  build) and DuckDB. The rebuild **reconciles exactly**
   ([ADR-0010](docs/adr/ADR-0010-migration-retrospective.md)).
 
 ## App views
@@ -104,7 +127,7 @@ flowchart TD
     A[retained TfL extracts<br/>148 files · 41.4M journeys] -->|PySpark backfill| S[(Warehouse<br/>silver · 41.4M journeys)]
     API[TfL Unified API<br/>BikePoint + Line Status] -->|Python daily loader| S
     W[Open-Meteo<br/>weather] --> S
-    S --> D{dbt<br/>models + 63 tests}
+    S --> D{dbt<br/>16 models + 78 tests}
     D --> G[(Gold star schema<br/>+ demand-deviation)]
     G --> ML[LightGBM forecast<br/>MLflow · FastAPI]
     ML --> G
@@ -133,9 +156,13 @@ disruption and recent-demand lag features. It is used in two ways:
 
 - **A sharper baseline.** Predicting with the disruption flag off yields a counterfactual "normal
   demand" that replaces the coarse median in the deviation analysis (`demand_deviation_ml`).
-- **A validated forecast.** Trained with strict temporal validation (fit 2022→24, held-out 2026),
-  it cuts error **~21% vs the median** and **~28% vs a seasonal-naive** baseline; runs are tracked
-  in MLflow and it's served locally via FastAPI. See
+- **A validated forecast.** Strict temporal validation: fit on 2022→2024, early-stop on 2025,
+  report held-out 2026, so no window sees its own future. It has to beat **two** baselines on
+  that held-out window and [`ml/train.py`](ml/train.py) prints a plain **PASS/FAIL** on both —
+  a stratified median computed from pre-test data only, which makes it leakage-free by
+  construction, and seasonal-naive. It cuts error **~21% vs the median** and **~28% vs
+  seasonal-naive**; runs are tracked in MLflow, a pytest feature-leakage guard backs the feature
+  set, and it is served locally via FastAPI. See
   [ADR-0008](docs/adr/ADR-0008-ml-demand-forecast.md).
 
 ```bash
@@ -202,13 +229,23 @@ docs/        ADRs, architecture and engineering notes
 
 ## How it stays live
 
-A daily GitHub Actions job ([.github/workflows/daily.yml](.github/workflows/daily.yml)) snapshots
-live line status and dock occupancy, ingests newly published journey CSVs
-([`journey_increment.py`](ingestion/journey_increment.py), which is schema-gated and idempotent), rebuilds
-the analytics layer with **dbt tests gating delivery**, and appends a run-metadata audit row. A
-red run auto-opens a GitHub issue. The app's **Pipeline health** page shows coverage, freshness
-and the audit trail, including gaps. It needs no warehouse or persistent server and runs on free
-tiers indefinitely. A second scheduled job
+A daily GitHub Actions job ([.github/workflows/daily.yml](.github/workflows/daily.yml)) runs the
+whole chain in order and stops at the first failure: snapshot live line status and dock occupancy
+→ ingest newly published journey CSVs ([`journey_increment.py`](ingestion/journey_increment.py),
+schema-gated and idempotent) → `dbt build` and `dbt source freshness`, **which gate delivery** →
+regenerate the certified ADR-0009 evidence → re-verify its certificate → append a run-metadata
+audit row → commit → ping a dead-man's-switch. A red run auto-opens a GitHub issue. The app's
+**Pipeline health** page shows coverage, freshness and the audit trail, including gaps. It needs
+no warehouse or persistent server and runs on free tiers indefinitely.
+
+> [!NOTE]
+> **Which workflow gates what.** The dbt tests gate *delivery*, not pull requests. They run in
+> `daily.yml` ahead of the commit step, so failing data is never published. The CI badge at the
+> top of this README is [`ci.yml`](.github/workflows/ci.yml), which runs on every push and pull
+> request and covers ruff, the 109-test pytest suite and the cross-engine conformance
+> benchmarks — it does not run dbt.
+
+A second scheduled job
 ([.github/workflows/keepalive.yml](.github/workflows/keepalive.yml)) pings the app every few hours
 so visitors are less likely to encounter a cold start. This works around
 free tier, not a Streamlit limit.
@@ -224,8 +261,11 @@ through a local environment variable and is not exercised by this project.
 
 The separate [portable reliability reference](benchmark/reliability_reference/README.md) uses
 constructed fixtures and a reviewed JSON oracle to prove replay, replacement, complete-object
-rejection, and interruption recovery across DuckDB and digest-pinned Spark. It does not import
-application state or alter the living workflow.
+rejection, and interruption recovery across DuckDB and digest-pinned Spark. **CI runs it as a
+cross-engine parity gate on every pull request:** a DuckDB conformance run, a second conformance
+run inside a digest-pinned `apache/spark:4.0.1` container, then a semantic comparison of the two
+decoded results — all three reports uploaded as artefacts. It does not import application state
+or alter the living workflow.
 
 T3 attempted a bounded Databricks Delta proof. The gate ended **NARROW** because the initial
 deployment and one allowed corrective deployment could not reliably read workspace Python files.
