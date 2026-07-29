@@ -5,8 +5,8 @@
 // SETUP (once, in Power BI Desktop):
 //   1. Home → Transform data → Manage Parameters → New:
 //        Name: GoldExportFolder   Type: Text
-//        Current value: <your local clone>\app\gold_export
-//        e.g. C:\dev\portfolio\tfl-data-engineering\app\gold_export
+//        Current value: <repo-root>\app\gold_export
+//        where <repo-root> is wherever you cloned this repository
 //   2. For each table below: Home → New Source → Blank Query → Advanced Editor → paste the block.
 //   3. Rename each query to the table name (the comment header).
 //

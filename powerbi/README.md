@@ -23,8 +23,8 @@ Snowflake credentials.
 
 1. **Clone the repo** locally so the Parquet files exist on disk.
 2. **New report** → *Transform data* → *Manage Parameters* → **New**:
-   `GoldExportFolder` · Text · current value = `<clone>\app\gold_export`
-   (e.g. `C:\dev\portfolio\tfl-data-engineering\app\gold_export`).
+   `GoldExportFolder` · Text · current value = `<repo-root>\app\gold_export`,
+   where `<repo-root>` is wherever you cloned this repository.
 3. For each block in [`queries.pq`](queries.pq): *New Source → Blank Query → Advanced Editor*,
    paste, and rename the query to the table name. *Close & Apply*.
 4. **Model view** → create the relationships (all single-direction, dimension → fact):
