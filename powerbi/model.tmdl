@@ -10,9 +10,11 @@
 // Only the columns used by measures/relationships/pages are listed; Power BI infers the full
 // column set from each Parquet source on refresh. Measures live in powerbi/measures.dax.
 
-// ── Parameter: where the committed gold Parquet lives (set per your local clone) ──
+// ── Parameter: where the committed gold Parquet lives ──
+// Placeholder on purpose. It is required (IsParameterQueryRequired below), so set it to
+// <repo-root>\app\gold_export for your own clone before the first refresh.
 expression GoldExportFolder =
-        "C:\dev\portfolio\tfl-data-engineering\app\gold_export" meta [
+        "<repo-root>\app\gold_export" meta [
     IsParameterQuery = true,
     Type = "Text",
     IsParameterQueryRequired = true

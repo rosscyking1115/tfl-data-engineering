@@ -57,5 +57,35 @@ same 1.423 headline ratio without filters, under a date slice, and under a
 station slice; its 95% confidence interval was 1.241–1.608. That confirms the
 certificate table is disconnected from the date and station dimensions and
 that Power BI consumes the rigor-owned evidence rather than deriving a second
-headline. Independent Reviewer/QA recorded a PASS in
-`C:/dev/_pmo/team/reviews/2026-07-24-tfl-tcert-powerbi-closure.md`.
+headline.
+
+### The closure review, and what a reader here cannot check
+
+Closure was signed off **PASS** by a Reviewer/QA pass on 2026-07-24. That record
+(`2026-07-24-tfl-tcert-powerbi-closure.md`) is an internal governance file kept
+outside this repository and **is not published**, so the sign-off itself cannot be
+verified by anyone reading this repo. Its substantive findings are summarised
+below so the claim rests on something checkable against the code, rather than on a
+pointer no reader can follow:
+
+- `analysis/rigor.py` is the only producer of the result; `analysis/certificate.py`
+  validates provenance and derives no uplift, interval or comparator.
+- **No second ADR-0009 uplift calculation was found anywhere in the repository.**
+  That is the finding that matters most here, and it is the one you can re-check
+  yourself — the consumers are `dbt/models/analytics/certified_adr0009_evidence.sql`,
+  `app/data_access.py`, `app/assistant.py` and `powerbi/measures.dax`.
+- dbt's `certified_adr0009_evidence` is a thin `read_json_auto` view over the same
+  JSON that Streamlit and the assistant read.
+- The packaged `.pbit` semantic model imports the certificate table, exposes only
+  certificate-consuming `MAX` measures, and contains **no relationship involving
+  that table** — the structural reason date and station slicers cannot filter it.
+- Fresh consumer tests (29 passing in the selected set at that date), `ruff`, and
+  `git diff --check` were clean, and no Parquet or committed snapshot changed.
+
+Two limits the review recorded explicitly, which this document should not soften:
+
+- The PASS covers the **delivered template, queries and semantic model** — not a
+  pre-designed report. The report canvas contains no pre-built visual containers.
+- The Desktop open-and-query sequence was performed by the repository owner, and
+  Reviewer/QA **did not repeat it**. That step is owner-verified, not independently
+  reproduced.
