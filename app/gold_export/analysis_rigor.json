@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-28T07:14:08Z",
+  "generated_at": "2026-07-29T07:15:38Z",
   "certificate": {
     "certificate_schema_version": "1.1",
     "evidence_version": "tcert-adr0009-v1",
     "certificate_id": "tcert-adr0009-36085ec85fec",
     "adr_id": "ADR-0009",
     "adr_document_sha256": "930d4324293feea950a142ca8893f3b92f46ab925812de52ab2dcd3cb95a83d4",
-    "generated_at_utc": "2026-07-28T07:14:08Z",
+    "generated_at_utc": "2026-07-29T07:15:38Z",
     "claim_class": "observed_association",
     "permitted_claim": "On days with a verified, source-cited London Underground strike, Santander cycle-hire demand runs at a median 1.42\u00d7 its weather-adjusted expectation. This is an observed association, not a causal effect.",
     "primary_specification": {
@@ -275,6 +275,7 @@
         "lioness": 4,
         "metropolitan": 21,
         "mildmay": 11,
+        "northern": 60,
         "piccadilly": 34,
         "suffragette": 0,
         "victoria": 24,
@@ -293,6 +294,7 @@
         "lioness": 10,
         "metropolitan": 75,
         "mildmay": 37,
+        "northern": 155,
         "piccadilly": 102,
         "suffragette": 0,
         "victoria": 70,
@@ -311,6 +313,7 @@
         "lioness": 34,
         "metropolitan": 167,
         "mildmay": 118,
+        "northern": 309,
         "piccadilly": 208,
         "suffragette": 0,
         "victoria": 163,
