@@ -3,6 +3,13 @@
 This review closed the rigor pass on 2026-07-13. It checks six questions against evidence in the
 repository.
 
+> [!NOTE]
+> **A dated record, not a live status page.** Counts of tests, models and ADRs move with the
+> repository, so this document no longer restates them — the [README](../README.md) carries the
+> current figures and the commands below reproduce them. An earlier version did quote fixed
+> counts; they drifted, and a downstream page then republished a stale number. Removing the
+> duplicate is the fix, because a figure repeated in two places goes stale in one of them.
+
 ## 1 · Is the analytical claim honest?
 
 Yes. [ADR-0009](adr/ADR-0009-analytical-contract.md) defines the result as an association and
@@ -15,12 +22,25 @@ correction. Every event row carries a `source_url`
 
 ## 2 · Is data quality real or decorative?
 
-Yes. The suite has 63 dbt data tests, a de-duplication unit test and 36 pytest guards. Its
-injected-error fixtures cover corrupt payloads, schema drift and truncated volume, and fail loudly
+Yes, and load-bearing rather than decorative. The dbt suite combines built-in schema tests,
+`dbt_utils` checks, and singular tests that assert what generic tests cannot — flow-to-daily
+reconciliation, journey-calendar completeness, snapshot-log gaps, one current SCD2 version per
+station, and a source URL on every seeded strike — plus dbt unit tests that drive mock rows through
+model logic. The pytest suite adds pipeline guards whose injected-error fixtures cover corrupt
+payloads, schema drift and truncated volume, and fail loudly
 ([test_pipeline_guards.py](../tests/test_pipeline_guards.py),
-[test_journey_increment.py](../tests/test_journey_increment.py)). The freshness tripwire,
-configured during the pass, immediately surfaced a real 3-day outage; the reconciliation test
-caught the arrival-spillover subtlety on its first run.
+[test_journey_increment.py](../tests/test_journey_increment.py)).
+
+Two of them earned their place on contact rather than in theory: the freshness tripwire, configured
+during the pass, immediately surfaced a real 3-day outage, and the reconciliation test caught the
+arrival-spillover subtlety on its first run.
+
+To count them yourself rather than trust a number in prose:
+
+```bash
+dbt parse --target duckdb --project-dir dbt --profiles-dir dbt   # counts in dbt/target/manifest.json
+pytest --collect-only -q
+```
 
 ## 3 · Does it fail loudly and recover?
 
@@ -41,8 +61,8 @@ documented in `.env.example`, never committed.
 ## 5 · Is it maintainable?
 
 Yes. The repository has layered dbt models with lineage ([static dbt docs](dbt/index.html)) and
-engine-portable SQL with differences isolated in three macros. Eleven ADRs record decisions
-([decision log](adr/)). [Source contracts](source_contracts.md) name the upstream fields the
+engine-portable SQL with differences isolated in three macros. Every non-obvious decision is
+recorded as a dated ADR ([decision log](adr/)). [Source contracts](source_contracts.md) name the upstream fields the
 pipeline uses, and CI runs Ruff and pytest on every pull request.
 
 ## 6 · Was the migration designed-in?
