@@ -2,7 +2,7 @@
 # this packages the FastAPI /predict endpoint for a runnable demo. Not deployed anywhere.
 # Build from the repo root:  docker build -f ml/Dockerfile -t tfl-demand-api .
 # Run:                       docker run -p 8000:8000 tfl-demand-api
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 WORKDIR /srv
 COPY ml/requirements.txt ml/requirements.txt
