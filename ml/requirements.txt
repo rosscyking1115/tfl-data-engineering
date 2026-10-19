@@ -1,14 +1,14 @@
 # ML layer deps — kept SEPARATE from app/requirements.txt so the Streamlit Cloud
 # image stays lean. Pinned to the locally-verified versions (rigor-pass Area 7).
 # Install into the project venv:  .venv/Scripts/pip install -r ml/requirements.txt
-lightgbm==4.6.0
-mlflow==3.14.0
-scikit-learn==1.9.0
-holidays==0.100
-fastapi==0.139.0
-uvicorn[standard]==0.51.0
+lightgbm==4.7.0
+mlflow==3.17.1
+scikit-learn==1.9.1
+holidays==0.106
+fastapi==0.143.2
+uvicorn[standard]==0.54.0
 # shared data stack (same pins as app/requirements.txt)
-duckdb==1.5.4
-pandas==3.0.3
-pyarrow==24.0.0
-numpy==2.5.1
+duckdb==1.5.6
+pandas==3.0.6
+pyarrow==26.0.0
+numpy==2.5.4
