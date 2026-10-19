@@ -42,8 +42,9 @@ jobs:
 
   ml-requirements:
     # Nothing else installs ml/requirements.txt, so a conflicting pin would go unseen
-    # until someone builds ml/Dockerfile. Resolve it the way that image installs it
-    # (Python 3.13 on Linux), without installing anything.
+    # until someone builds ml/Dockerfile. Resolve it for that image's Python (3.13 on
+    # Linux) without installing anything. Wheels only, so no package's setup script runs;
+    # a pin with no Linux wheel fails here rather than building from source.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -51,7 +52,8 @@ jobs:
         with:
           python-version: "3.13"
       - name: Resolve ml/requirements.txt (dry run)
-        run: pip install --dry-run -r ml/requirements.txt
+        run: |
+          pip install --dry-run --only-binary :all: -r ml/requirements.txt
 
   benchmark-duckdb:
     runs-on: ubuntu-latest
