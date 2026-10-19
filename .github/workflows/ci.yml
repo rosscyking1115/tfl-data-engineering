@@ -25,8 +25,8 @@ jobs:
 
       - name: Install dependencies
         # The test suite imports the app deps + `holidays` (used by ml/features.py); it does
-        # NOT need the heavy ml stack (lightgbm/mlflow/fastapi), which also can't co-resolve
-        # with the app's pinned pandas. Install only what the tests actually import.
+        # NOT need the heavy ml stack (lightgbm/mlflow/fastapi). Install only what the tests
+        # actually import. The ml-requirements job checks that the ml stack still resolves.
         run: |
           python -m pip install --upgrade pip
           pip install -r app/requirements.txt
@@ -39,6 +39,21 @@ jobs:
 
       - name: Tests (pytest)
         run: pytest
+
+  ml-requirements:
+    # Nothing else installs ml/requirements.txt, so a conflicting pin would go unseen
+    # until someone builds ml/Dockerfile. Resolve it for that image's Python (3.13 on
+    # Linux) without installing anything. Wheels only, so no package's setup script runs;
+    # a pin with no Linux wheel fails here rather than building from source.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Resolve ml/requirements.txt (dry run)
+        run: |
+          pip install --dry-run --only-binary :all: -r ml/requirements.txt
 
   benchmark-duckdb:
     runs-on: ubuntu-latest
