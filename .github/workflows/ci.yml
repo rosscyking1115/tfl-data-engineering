@@ -15,10 +15,10 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
@@ -43,8 +43,8 @@ jobs:
   benchmark-duckdb:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
@@ -58,7 +58,7 @@ jobs:
         run: python -m benchmark.reliability_reference run --engine duckdb --scenario all --output benchmark-output/duckdb
       - name: Upload DuckDB report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reliability-reference-duckdb
           path: benchmark-output/duckdb
@@ -66,7 +66,7 @@ jobs:
   benchmark-spark:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run digest-pinned Spark conformance
         run: |
           mkdir -p benchmark-output/spark
@@ -78,7 +78,7 @@ jobs:
             /opt/spark/bin/spark-submit /repo/tests/spark_reference_check.py /out
       - name: Upload Spark report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reliability-reference-spark
           path: benchmark-output/spark
@@ -87,12 +87,12 @@ jobs:
     needs: [benchmark-duckdb, benchmark-spark]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: reliability-reference-duckdb
           path: benchmark-output/duckdb
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: reliability-reference-spark
           path: benchmark-output/spark
@@ -100,7 +100,7 @@ jobs:
         run: python -m benchmark.reliability_reference compare --duckdb benchmark-output/duckdb --spark benchmark-output/spark --output benchmark-output/comparison
       - name: Upload parity report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reliability-reference-parity
           path: benchmark-output/comparison
