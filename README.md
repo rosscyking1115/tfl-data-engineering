@@ -6,6 +6,8 @@ model and a Streamlit app. The hosted workflow uses free GitHub Actions, stores 
 Parquet and queries them through DuckDB, so there is no live warehouse to maintain.
 
 [![CI](https://github.com/rosscyking1115/tfl-data-engineering/actions/workflows/ci.yml/badge.svg)](https://github.com/rosscyking1115/tfl-data-engineering/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/rosscyking1115/tfl-data-engineering/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/rosscyking1115/tfl-data-engineering/actions/workflows/github-code-scanning/codeql)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=rosscyking1115_tfl-data-engineering&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=rosscyking1115_tfl-data-engineering)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Live demo](https://img.shields.io/badge/demo-Streamlit-ff4b4b)](https://tfl-data-engineering.streamlit.app/)
 

@@ -1,0 +1,29 @@
+# Version updates only. Dependabot alerts are on in the repository settings;
+# automatic security-update pull requests are off. Monthly, and grouped within
+# each directory: pip and Docker can open one pull request a month for each of
+# their two directories, GitHub Actions one in total.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directories: ["/app", "/ml"]
+    schedule:
+      interval: "monthly"
+    groups:
+      python:
+        patterns: ["*"]
+    open-pull-requests-limit: 2
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      actions:
+        patterns: ["*"]
+    open-pull-requests-limit: 2
+
+  - package-ecosystem: "docker"
+    directories: ["/infra/airflow", "/ml"]
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
