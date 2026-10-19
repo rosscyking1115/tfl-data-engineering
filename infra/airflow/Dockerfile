@@ -1,4 +1,4 @@
-FROM apache/airflow:2.11.0
+FROM apache/airflow:3.3.2
 
 # Loader deps live in Airflow's own environment; dbt gets an ISOLATED venv —
 # dbt-core and airflow famously fight over shared dependencies.
