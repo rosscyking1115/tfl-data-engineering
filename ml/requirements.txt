@@ -5,7 +5,7 @@ lightgbm==4.7.0
 mlflow==3.17.1
 scikit-learn==1.9.1
 holidays==0.106
-fastapi==0.143.2
+fastapi==0.143.3
 uvicorn[standard]==0.54.0
 # shared data stack (same pins as app/requirements.txt)
 duckdb==1.5.6
