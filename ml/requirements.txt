@@ -2,13 +2,13 @@
 # image stays lean. Pinned to the locally-verified versions (rigor-pass Area 7).
 # Install into the project venv:  .venv/Scripts/pip install -r ml/requirements.txt
 lightgbm==4.7.0
-mlflow==3.17.1
+mlflow==3.17.2
 scikit-learn==1.9.1
-holidays==0.106
-fastapi==0.143.2
+holidays==0.107
+fastapi==0.162.0
 uvicorn[standard]==0.54.0
 # shared data stack (same pins as app/requirements.txt)
-duckdb==1.5.6
-pandas==3.0.6
+duckdb==2.0.0
+pandas==3.1.0
 pyarrow==25.0.1
 numpy==2.5.4
